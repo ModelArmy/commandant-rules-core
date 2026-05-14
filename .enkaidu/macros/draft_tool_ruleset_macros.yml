@@ -1,0 +1,38 @@
+draft_tool_ruleset.enter:
+  description: Get ready to draft tool risk rulesets by reading skill and supporting documentation.
+  queries:
+    - /session push
+    - |
+      Read the SKILL.md in ./skills/draft-tool-ruleset to understand what we are going to do.
+      Make sure to read any references and let me know when you're ready to start generating rulesets.
+
+draft_tool_ruleset.generate_for:
+  description: |
+    Generate a tool risk ruleset JSON file for a tool / platform specified via parameters.
+    - Usage: `!draft_tool_ruleset.generate_for tool=TOOLNAME platform=OSNAME`
+    - Use one of the following platform names: `macos`, `linux`, `windows`, or `posix`
+    - Does not support notes; use `!draft_tool_ruleset.generate` if notes needed.
+  queries:
+    - /session push
+    - |
+      Analyze the following shell tool and generate a risk ruleset.
+
+      Tool: %{tool}
+      Platform: %{platform}
+
+      Respond with a JSON object conforming to the provided schema.
+      Save the ruleset in `%{tool}.json` in the ./rulesets folder under the platform sub-folder.
+    - /prompt use draft_tool_ruleset.continue
+    - /session usage
+    - /session pop
+
+draft_tool_ruleset.generate:
+  description: |
+    Generate a tool risk ruleset JSON file for a tool and platform you will be prompted for.
+    - Usage: `!draft_tool_ruleset.generate`
+  queries:
+    - /session push
+    - /prompt use draft_tool_ruleset.generate
+    - /prompt use draft_tool_ruleset.continue
+    - /session usage
+    - /session pop

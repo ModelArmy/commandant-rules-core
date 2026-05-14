@@ -1,0 +1,29 @@
+draft_tool_ruleset.generate:
+  description: Generate a tool risk ruleset JSON file for a tool / platform.
+  arguments:
+    tool:
+      description: The command line tool
+    platform:
+      description: The platform in which the tool runs. One of `linux`, `macos`, `windows`, or `posix`
+    notes:
+      description: Any additional notes or instructions specific to this tool / platform? Enter if none.
+  template: |
+    - |
+      Analyze the following shell tool and generate a risk ruleset.
+
+      Tool: {{arg.tool}}
+      Platform: {{arg.platform}}
+
+      {{arg.notes}}
+      Respond with a JSON object conforming to the provided schema.
+      Save the ruleset in `{{arg.tool}}.json` in the ./rulesets folder under the platform sub-folder.
+
+      Additional guidance
+      - Severity WARNING requires a concrete, direct threat vector beyond "more information is revealed." Flags that change output format or verbosity without materially expanding access scope should be INFO unless combined with a flag that does.
+      - Must use SemGrep style patterns. Do not use regex or any other format.
+
+draft_tool_ruleset.continue:
+  description: Internal, used to tell a model to continue in case it stalls.
+  template: |
+            Save the ruleset JSON file if you have not already done so.
+            When in doubt, it is better to be specific and comprehensive than miss a rule that matters.
