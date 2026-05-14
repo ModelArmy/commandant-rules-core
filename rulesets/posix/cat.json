@@ -1,0 +1,57 @@
+{
+  "tool": "cat",
+  "tool_summary": "Concatenate and display file contents to stdout, or write contents to a target file via shell redirection.",
+  "platform": "posix",
+  "llm_confidence": "high",
+  "rules": [
+    {
+      "id": "cat-overwrites-file",
+      "description": "cat with output redirected to a file using >, which overwrites or creates the target file at its path.",
+      "patterns": [
+        {
+          "pattern": "cat ... > ...",
+          "pattern_type": "pipe",
+          "example": "cat file1.txt > output.txt",
+          "match": {
+            "raw_pattern": "cat\\s+(--[^=]*=\\s*)?[^\n]*>\\s"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "data-loss"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversible only if the target file existed before and was previously backed up; creating new files is inherently irreversible.",
+      "severity": "WARNING"
+    },
+    {
+      "id": "cat-appends-to-file",
+      "description": "cat with output appended to a file using >>, which adds content to an existing file or creates a new one.",
+      "patterns": [
+        {
+          "pattern": "cat ... >> ...",
+          "pattern_type": "pipe",
+          "example": "cat file1.txt >> output.txt",
+          "match": {
+            "raw_pattern": "cat\\s+(--[^=]*=\\s*)?[^\n]*>>\\s"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "notes": "Appending is reversible in the sense that old content is preserved; however, reversing requires manually stripping appended content."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "notes": "Baseline behavior: reads file(s) and writes to stdout. May expose sensitive content if applied to private files — reviewer should consider privacy-breach risk in context."
+  }
+}

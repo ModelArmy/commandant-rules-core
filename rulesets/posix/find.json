@@ -1,0 +1,94 @@
+{
+   "tool": "find",
+   "tool_summary": "Recursively searches directory trees and performs actions on matched files.",
+   "platform": "posix",
+   "llm_confidence": "high",
+   "unknown_flags": [],
+   "is_multiplexer": false,
+   "option_abbreviations": {},
+   "rules": [
+     {
+       "id": "find-executes-code",
+       "description": "Invokes an arbitrary command on each matched file via -exec. This allows execution of unvalidated code and can modify, delete, or exfiltrate files.",
+       "patterns": [
+         {
+           "pattern": "find $PATH -exec $CMD ...",
+           "pattern_type": "flag",
+           "example": "find /tmp -name '*.tmp' -exec rm {} \\;",
+           "match": {
+             "flags_any": ["-exec"]
+           }
+         }
+       ],
+       "risk_tags": ["executes-code", "recursive"],
+       "reversible": "depends",
+       "reversible_note": "Depends on the command executed — rm and mv are irreversible without backups; cat and ls are safe.",
+       "severity": "ERROR",
+       "likely_consequences": ["unsafe-code-execution", "data-loss", "data-corruption"],
+       "notes": "The {} placeholder is replaced by each found file path. Use + instead of \\; to pass multiple paths as batch arguments to the command."
+     },
+     {
+       "id": "find-execdir-executes-code",
+       "description": "Invokes a command from the directory of each matched file via -execdir. Higher risk than -exec due to potential path traversal or executing in the context of untrusted directories.",
+       "patterns": [
+         {
+           "pattern": "find $PATH -execdir $CMD ...",
+           "pattern_type": "flag",
+           "example": "find . -name '*.sh' -execdir bash {} \\;",
+           "match": {
+             "flags_any": ["-execdir"]
+           }
+         }
+       ],
+       "risk_tags": ["executes-code", "recursive"],
+       "reversible": "depends",
+       "reversible_note": "Depends on the command executed — same considerations as -exec.",
+       "severity": "ERROR",
+       "likely_consequences": ["unsafe-code-execution", "data-corruption"],
+       "notes": "Like -exec but cd s into the file's directory before executing. This mitigates some symlink attacks but introduces directory-context risks where the working directory is untrusted."
+     },
+     {
+       "id": "find-delete-files",
+       "description": "Deletes all matched files via -delete flag. No confirmation prompt; files are removed immediately.",
+       "patterns": [
+         {
+           "pattern": "find $PATH -delete",
+           "pattern_type": "flag",
+           "example": "find /tmp -type f -mtime +30 -delete",
+           "match": {
+             "flags_any": ["-delete"]
+           }
+         }
+       ],
+       "risk_tags": ["deletes-files", "recursive", "irreversible"],
+       "reversible": "no",
+       "severity": "ERROR",
+       "likely_consequences": ["data-loss", "data-corruption"]
+     },
+     {
+       "id": "find-executes-code-ok",
+       "description": "Similar to -exec but prompts the user for confirmation before executing each command. Provides a safety margin but does not prevent the action if confirmed.",
+       "patterns": [
+         {
+           "pattern": "find $PATH -ok $CMD ...",
+           "pattern_type": "flag",
+           "example": "find /tmp -name 'secret*' -ok cat {} \\;",
+           "match": {
+             "flags_any": ["-ok"]
+           }
+         }
+       ],
+       "risk_tags": ["executes-code", "recursive"],
+       "reversible": "depends",
+       "reversible_note": "Depends on the command executed and whether the user confirms each invocation.",
+       "severity": "WARNING",
+       "likely_consequences": ["privacy-breach", "unsafe-code-execution"],
+       "notes": "Like -exec but presents a Y/n prompt per matched file. In non-interactive shells this will fail."
+     }
+   ],
+   "default_rule": {
+     "risk_tags": ["reads-files", "recursive"],
+     "reversible": "yes",
+     "severity": "INFO"
+   }
+}

@@ -1,0 +1,111 @@
+{
+   "tool": "sed",
+   "tool_summary": "Stream editor for filtering and transforming text",
+   "platform": "macos",
+   "platform_notes": "macOS uses BSD sed rather than GNU sed. Critical difference: -i requires a mandatory second argument (the backup suffix). -i '' means no backup (equivalent to GNU sed's -i without argument). Using -i '' is irreversible as no backup file is created. See also: ../linux/sed.json",
+   "llm_confidence": "high",
+   "unknown_flags": [],
+   "rules": [
+     {
+       "id": "sed-in-place-no-backup",
+       "description": "In-place editing with no backup suffix (-i ''). The original file is overwritten without retaining a copy. Irreversible.",
+       "patterns": [
+         {
+           "pattern": "sed -i '' ...",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -i '' 's/foo/bar/g' /path/to/file.txt",
+           "match": {
+             "flags_any": ["-i"],
+             "args_any": ["''", '""']
+           }
+         }
+       ],
+       "risk_tags": ["writes-files", "deletes-files", "irreversible"],
+       "reversible": "no",
+       "severity": "ERROR",
+       "likely_consequences": ["data-loss", "data-corruption"]
+     },
+     {
+       "id": "sed-in-place-backup",
+       "description": "In-place editing with a backup suffix (e.g., -i '.bak'). Original content is overwritten; backup copy saved with the specified extension. Risk is mitigated by the existence of the backup file.",
+       "patterns": [
+         {
+           "pattern": "sed -i '.ext' ...",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -i '.bak' 's/foo/bar/g' /path/to/file.txt",
+           "match": {
+             "flags_any": ["-i"],
+             "args_any": [".bak", ".old", ".orig", ".backup", ".save", ".tmp", ".bk"]
+           }
+         }
+       ],
+       "risk_tags": ["writes-files"],
+       "reversible": "depends",
+       "reversible_note": "Reversible if a backup file with the specified suffix exists in the same location as the edited file.",
+       "severity": "WARNING",
+       "likely_consequences": ["data-corruption"],
+       "notes": "Detection relies on arg values matching common backup suffixes. Uncommon suffixes or edge cases may not be caught. Backup suffixes could also appear inside sed script strings, causing false positives."
+     },
+     {
+       "id": "sed-f-script",
+       "description": "Reads sed commands from an external file via -f. The external file is interpreted as sed scripts, which may include file-writing commands, substitutions, and deletions.",
+       "patterns": [
+         {
+           "pattern": "sed -f <script-file> ...",
+           "pattern_type": "flag",
+           "example": "sed -f commands.sed /path/to/file.txt",
+           "match": {
+             "flags_any": ["-f"]
+           }
+         }
+       ],
+       "risk_tags": ["executes-code", "reads-files"],
+       "reversible": "depends",
+       "reversible_note": "Depends on the sed commands contained in the external script file (e.g., whether it contains w, a, i, c commands).",
+       "severity": "ERROR",
+       "likely_consequences": ["data-corruption", "data-loss"]
+     },
+     {
+       "id": "sed-w-command",
+       "description": "The sed w command writes output to a specified file, overwriting existing content. This directly modifies the filesystem.",
+       "patterns": [
+         {
+           "pattern": "sed ... w <file>",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed '/pattern/ w output.txt' input.txt",
+           "match": {
+             "raw_pattern": "\\bw\\s"
+           }
+         }
+       ],
+       "risk_tags": ["writes-files", "irreversible"],
+       "reversible": "no",
+       "reversible_note": "The w command overwrites the specified file with the current pattern space content.",
+       "severity": "WARNING",
+       "likely_consequences": ["data-corruption", "data-loss"]
+     },
+     {
+       "id": "sed-selective-print",
+       "description": "Suppresses default output (-n) and selectively prints matching lines. Read-only operation — does not modify files.",
+       "patterns": [
+         {
+           "pattern": "sed -n ...",
+           "pattern_type": "flag",
+           "example": "sed -n '/pattern/p' input.txt",
+           "match": {
+             "flags_any": ["-n"]
+           }
+         }
+       ],
+       "risk_tags": ["reads-files"],
+       "reversible": "yes",
+       "severity": "INFO",
+       "notes": "Read-only. Used for selective output filtering and pattern matching."
+     }
+   ],
+   "default_rule": {
+     "risk_tags": ["reads-files"],
+     "reversible": "yes",
+     "severity": "INFO"
+   }
+}

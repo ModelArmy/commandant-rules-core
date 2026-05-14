@@ -1,0 +1,425 @@
+{
+   "tool": "grep",
+   "platform": "posix",
+   "tool_summary": "Searches files for lines matching a pattern and prints matching lines to standard output.",
+   "llm_confidence": "high",
+   "rules": [
+      {
+         "id": "grep-recursive",
+         "description": "Recursively searches directory trees, expanding the scope of files read beyond those explicitly specified on the command line. This can inadvertently expose sensitive files in subdirectories.",
+         "patterns": [
+            {
+               "pattern": "grep ... -r ...",
+               "pattern_type": "flag",
+               "example": "grep -r 'secret' /etc",
+               "match": {
+                  "flags_any": [
+                     "-r"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -R ...",
+               "pattern_type": "flag",
+               "example": "grep -R 'secret' /etc",
+               "match": {
+                  "flags_any": [
+                     "-R"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --recursive ...",
+               "pattern_type": "flag",
+               "example": "grep --recursive 'secret' .",
+               "match": {
+                  "flags_any": [
+                     "--recursive"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --directories ...",
+               "pattern_type": "flag",
+               "example": "grep --directories=recurse 'secret' /data",
+               "match": {
+                  "flags_any": [
+                     "--directories"
+                  ],
+                  "args_any": [
+                     "recurse",
+                     "read"
+                  ]
+               }
+            }
+         ],
+         "risk_tags": [
+            "reads-files",
+            "recursive"
+         ],
+         "reversible": "yes",
+         "severity": "WARNING",
+         "notes": "-r and -R differ in symlink handling: -R follows symlinks while -r does not in GNU grep. BSD grep treats them identically."
+      },
+      {
+         "id": "grep-binary",
+         "description": "Forces grep to process binary files as text, expanding the set of files read and potentially producing corrupted output from binary content. If output is consumed downstream (e.g., in scripts or automated processing), this risks data corruption.",
+         "patterns": [
+            {
+               "pattern": "grep ... -a ...",
+               "pattern_type": "flag",
+               "example": "grep -a 'pattern' /usr/lib/libc.so",
+               "match": {
+                  "flags_any": [
+                     "-a"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --text ...",
+               "pattern_type": "flag",
+               "example": "grep --text 'pattern' binaryfile",
+               "match": {
+                  "flags_any": [
+                     "--text"
+                  ]
+               }
+            }
+         ],
+         "risk_tags": [
+            "reads-files"
+         ],
+         "reversible": "yes",
+         "severity": "WARNING",
+         "likely_consequences": [
+            "data-corruption"
+         ]
+      },
+      {
+         "id": "grep-pattern-file",
+         "description": "Reads search patterns from an external file rather than from inline arguments. This expands the set of files read by grep to include the pattern source file, which may contain sensitive content if the file path is attacker-controlled.",
+         "patterns": [
+            {
+               "pattern": "grep ... -f ...",
+               "pattern_type": "flag",
+               "example": "grep -f patterns.txt datafile",
+               "match": {
+                  "flags_any": [
+                     "-f"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --file ...",
+               "pattern_type": "flag",
+               "example": "grep --file patterns.txt datafile",
+               "match": {
+                  "flags_any": [
+                     "--file"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --exclude-from ...",
+               "pattern_type": "flag",
+               "example": "grep --exclude-from blacklist.txt 'pattern' dir",
+               "match": {
+                  "flags_any": [
+                     "--exclude-from"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --include-from ...",
+               "pattern_type": "flag",
+               "example": "grep --include-from whitelist.txt 'pattern' dir",
+               "match": {
+                  "flags_any": [
+                     "--include-from"
+                  ]
+               }
+            }
+         ],
+         "risk_tags": [
+            "reads-files"
+         ],
+         "reversible": "yes",
+         "severity": "INFO"
+      },
+      {
+         "id": "grep-output-formatting",
+         "description": "Flags that change output format, matching mode, or display settings without expanding the set of files read. These include line numbers, counts, filename-only output, pattern inversion, color, and regex mode changes.",
+         "patterns": [
+            {
+               "pattern": "grep ... -n ...",
+               "pattern_type": "flag",
+               "example": "grep -n 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-n",
+                     "--line-number"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -c ...",
+               "pattern_type": "flag",
+               "example": "grep -c 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-c",
+                     "--count"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -l ...",
+               "pattern_type": "flag",
+               "example": "grep -l 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-l",
+                     "--files-with-matches"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -L ...",
+               "pattern_type": "flag",
+               "example": "grep -L 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-L",
+                     "--files-without-matches"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -o ...",
+               "pattern_type": "flag",
+               "example": "grep -o 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-o",
+                     "--only-matching"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -b ...",
+               "pattern_type": "flag",
+               "example": "grep -b 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-b",
+                     "--byte-offset"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -v ...",
+               "pattern_type": "flag",
+               "example": "grep -v 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-v",
+                     "--invert-match"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -q ...",
+               "pattern_type": "flag",
+               "example": "grep -q 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-q",
+                     "--quiet",
+                     "--silent"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -s ...",
+               "pattern_type": "flag",
+               "example": "grep -s 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-s",
+                     "--silent"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --color ...",
+               "pattern_type": "flag",
+               "example": "grep --color=always 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "--color",
+                     "--colors"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --line-buffered ...",
+               "pattern_type": "flag",
+               "example": "grep --line-buffered 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "--line-buffered"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -E ...",
+               "pattern_type": "flag",
+               "example": "grep -E 'pattern|alt' file",
+               "match": {
+                  "flags_any": [
+                     "-E",
+                     "--extended-regexp",
+                     "--regexp=extended"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -F ...",
+               "pattern_type": "flag",
+               "example": "grep -F 'literal' file",
+               "match": {
+                  "flags_any": [
+                     "-F",
+                     "--fixed-strings",
+                     "--fixed-regexp",
+                     "--fgrep"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -G ...",
+               "pattern_type": "flag",
+               "example": "grep -G 'basic pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-G",
+                     "--basic-regexp",
+                     "--basic-regex"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -i ...",
+               "pattern_type": "flag",
+               "example": "grep -i 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-i",
+                     "--ignore-case"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -w ...",
+               "pattern_type": "flag",
+               "example": "grep -w 'word' file",
+               "match": {
+                  "flags_any": [
+                     "-w",
+                     "--word-regexp"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -x ...",
+               "pattern_type": "flag",
+               "example": "grep -x 'line' file",
+               "match": {
+                  "flags_any": [
+                     "-x",
+                     "--line-regexp"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -z ...",
+               "pattern_type": "flag",
+               "example": "grep -z 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-z",
+                     "--null-data"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -m ...",
+               "pattern_type": "flag",
+               "example": "grep -m 5 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-m",
+                     "--max-count"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --include ...",
+               "pattern_type": "flag",
+               "example": "grep --include='*.log' 'pattern' dir",
+               "match": {
+                  "flags_any": [
+                     "--include",
+                     "--exclude"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --label ...",
+               "pattern_type": "flag",
+               "example": "grep --label 'my-label' pattern",
+               "match": {
+                  "flags_any": [
+                     "--label"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... --no-filename ...",
+               "pattern_type": "flag",
+               "example": "grep --no-filename 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "--no-filename",
+                     "-h"
+                  ]
+               }
+            },
+            {
+               "pattern": "grep ... -I ...",
+               "pattern_type": "flag",
+               "example": "grep -I 'pattern' file",
+               "match": {
+                  "flags_any": [
+                     "-I",
+                     "--binary-files=without-match",
+                     "--binary-files=skip"
+                  ]
+               }
+            }
+         ],
+         "risk_tags": [
+            "reads-files"
+         ],
+         "reversible": "yes",
+         "severity": "INFO"
+      }
+   ],
+   "default_rule": {
+      "risk_tags": [
+         "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO"
+   }
+}

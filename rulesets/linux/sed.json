@@ -1,0 +1,229 @@
+{
+   "tool": "sed",
+   "tool_summary": "A stream editor for filtering and transforming text, operating on input data line by line and outputting the results.",
+   "platform": "linux",
+   "platform_notes": "GNU sed. In-place editing with -i does not require a suffix argument; omitting the suffix performs editing without backup. BSD sed requires -i.SUFFIX even if empty. Use the separate macos ruleset for BSD behavior.",
+   "llm_confidence": "high",
+   "unknown_flags": [
+     "--unbuffered",
+     "--label",
+     "--debug"
+   ],
+   "rules": [
+     {
+       "id": "sed-in-place",
+       "description": "In-place editing. -i and --in-place cause sed to write back to the input file(s), overwriting originals. Without a backup suffix the operation is irreversible.",
+       "patterns": [
+         {
+           "pattern": "sed -i",
+           "pattern_type": "flag",
+           "example": "sed -i 's/foo/bar/' file.txt",
+           "match": {
+             "flags_any": ["-i.bak", "-i.backup", "-i~", "-i"]
+           }
+         },
+         {
+           "pattern": "sed --in-place",
+           "pattern_type": "flag",
+           "example": "sed --in-place 's/foo/bar/' file.txt",
+           "match": {
+             "flags_any": ["--in-place"]
+           }
+         }
+       ],
+       "risk_tags": [
+         "writes-files",
+         "deletes-files",
+         "irreversible"
+       ],
+       "reversible": "depends",
+       "reversible_note": "GNU sed -i without argument overwrites in place with no backup. With argument (e.g. -i.bak), a backup is created. The operation is irreversible without one.",
+       "severity": "ERROR",
+       "all_match": false,
+       "notes": "GNU sed -i without argument overwrites in place with no backup. With argument (e.g. -i.bak), a backup is created. The operation is irreversible without one.",
+       "likely_consequences": ["data-loss", "data-corruption"]
+     },
+     {
+       "id": "sed-extended-regex",
+       "description": "Extended regex mode. Enables GNU extended regular expression syntax (-E, -r, --regexp-extended, --expand), which matches broader patterns and may cause unintended replacements if patterns are not anchored or escaped carefully.",
+       "patterns": [
+         {
+           "pattern": "sed -E -r --regexp-extended --expand",
+           "pattern_type": "flag",
+           "example": "sed --regexp-extended 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_any": ["--expand", "--expand=", "-r", "-E", "--regexp-extended", "--regexp=extended"]
+           }
+         }
+       ],
+       "risk_tags": [],
+       "reversible": "yes",
+       "severity": "WARNING",
+       "all_match": false,
+       "notes": "Extended regex changes pattern matching behavior. Combined with -i this increases risk significantly."
+     },
+     {
+       "id": "sed-in-place-extended",
+       "description": "In-place editing combined with extended regex. Overwrites files while using broader pattern matching, increasing the chance of unintended replacements.",
+       "patterns": [
+         {
+           "pattern": "sed -i -E -r",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -i -E 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["-i", "-E"]
+           }
+         },
+         {
+           "pattern": "sed -E -i",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -E -i 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["-i", "-E"]
+           }
+         },
+         {
+           "pattern": "sed -i -r",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -i -r 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["-i", "-r"]
+           }
+         },
+         {
+           "pattern": "sed -E -r --regexp-extended",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -i --regexp-extended 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["-i", "--regexp-extended"]
+           }
+         },
+         {
+           "pattern": "sed --in-place -E -r",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed --in-place -E 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["--in-place", "-E"]
+           }
+         },
+         {
+           "pattern": "sed --in-place -r",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed --in-place -r 's/(foo|bar)/baz/' file.txt",
+           "match": {
+             "flags_all": ["--in-place", "-r"]
+           }
+         }
+       ],
+       "risk_tags": [
+         "writes-files",
+         "deletes-files",
+         "irreversible"
+       ],
+       "reversible": "depends",
+       "reversible_note": "In-place editing with extended regex is destructive, but reversible if a backup suffix was provided (e.g. -i.bak).",
+       "severity": "ERROR",
+       "all_match": false,
+       "notes": "Compounding risk from both destructive operation and broader pattern matching."
+     },
+     {
+       "id": "sed-script-write",
+       "description": "sed script w command used with -e or --expression. Writes output to arbitrary files specified in the w command, not just stdout or the input file.",
+       "patterns": [
+         {
+           "pattern": "sed -e '...w ...'",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -e '/pattern/w /tmp/output.txt' input.txt",
+           "match": {
+             "flags_any": ["-e", "--expression"],
+             "raw_pattern": "sed.*\\be\\b.*w\\b[^ew].*"
+           }
+         },
+         {
+           "pattern": "sed --expression '...w ...'",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed --expression 's/foo/bar/; w output.txt' input.txt",
+           "match": {
+             "flags_any": ["--expression"],
+             "raw_pattern": "sed.*\\be\\b.*w\\b[^ew].*"
+           }
+         },
+         {
+           "pattern": "sed -f SCRIPT containing w",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -f script.sed input.txt",
+           "match": {
+             "flags_any": ["-f"],
+             "raw_pattern": "\\bw\\b[^ew]"
+           }
+         }
+       ],
+       "risk_tags": [
+         "writes-files"
+       ],
+       "reversible": "depends",
+       "reversible_note": "Depends on whether the w command target is a controlled location. Writing to arbitrary paths may have broader consequences.",
+       "severity": "WARNING",
+       "all_match": false,
+       "notes": "The w command writes matching lines to a specified file. This can overwrite existing files at arbitrary paths."
+     },
+     {
+       "id": "sed-exec-code",
+       "description": "sed script e or system command used with -e or --expression. These commands in the script invoke the shell to execute arbitrary commands or programs.",
+       "patterns": [
+         {
+           "pattern": "sed -e '...e'",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -e 's/foo/bar/e' input.txt",
+           "match": {
+             "flags_any": ["-e", "--expression"],
+             "raw_pattern": "sed.*\\be\\b.*\\b(.*\\be|s/.*\\be\\b)"
+           }
+         },
+         {
+           "pattern": "sed --expression '...e'",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed --expression 's/foo/bar/e' input.txt",
+           "match": {
+             "flags_any": ["--expression"],
+             "raw_pattern": "sed.*\\be\\b.*\\b(.*\\be|s/.*\\be\\b)"
+           }
+         },
+         {
+           "pattern": "sed -e '...system ...'",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -e 'system(\"rm -rf /tmp\")' input.txt",
+           "match": {
+             "flags_any": ["-e", "--expression"],
+             "raw_pattern": "sed.*\\bsystem\\b"
+           }
+         },
+         {
+           "pattern": "sed -f SCRIPT containing e or system",
+           "pattern_type": "flag-argument-combination",
+           "example": "sed -f script.sed input.txt",
+           "match": {
+             "flags_any": ["-f"],
+             "raw_pattern": "\\bsystem\\b"
+           }
+         }
+       ],
+       "risk_tags": [
+         "executes-code",
+         "subshell"
+       ],
+       "reversible": "depends",
+       "reversible_note": "Depends on what commands are invoked. System-level commands with side effects may be irreversible.",
+       "severity": "ERROR",
+       "all_match": false,
+       "notes": "The e command executes the result of a substitution as a shell command. The system command executes an arbitrary shell command. Both are dangerous in untrusted input scenarios."
+     }
+   ],
+   "default_rule": {
+     "risk_tags": [
+       "reads-files"
+     ],
+     "reversible": "yes",
+     "severity": "INFO"
+   }
+}

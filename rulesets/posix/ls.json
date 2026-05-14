@@ -1,0 +1,79 @@
+{
+    "tool": "ls",
+    "tool_summary": "List directory contents and file metadata.",
+    "platform": "posix",
+    "llm_confidence": "high",
+    "unknown_flags": [],
+    "is_multiplexer": false,
+    "rules": [
+      {
+        "id": "ls-recursive",
+        "description": "Recursively lists directory trees, exposing the full file hierarchy including subdirectories and nested files. This can reveal the complete structure of sensitive directories, file locations, and the scope of accessible data.",
+        "patterns": [
+          {
+            "pattern": "ls $A -R $B",
+            "pattern_type": "flag",
+            "example": "ls -R /var/log",
+            "match": {
+              "flags_any": ["-R", "--recursive", "--d-recursively"]
+            }
+          }
+        ],
+        "risk_tags": ["recursive", "reads-files"],
+        "reversible": "yes",
+        "severity": "WARNING",
+        "likely_consequences": ["privacy-breach"],
+        "notes": "Exposes entire directory tree structure. Particularly concerning on large or sensitive directory hierarchies."
+      },
+      {
+        "id": "ls-hidden",
+        "description": "Lists hidden files (dotfiles) which may contain sensitive configuration, credentials, or other information deliberately kept hidden from standard listings.",
+        "patterns": [
+          {
+            "pattern": "ls $A (-a | -A | --all | --almost-all) $B",
+            "pattern_type": "flag",
+            "example": "ls -a ~/",
+            "match": {
+              "flags_any": ["-a", "-A", "--all", "--almost-all"]
+            }
+          }
+        ],
+        "risk_tags": ["reads-files"],
+        "reversible": "yes",
+        "severity": "INFO",
+        "likely_consequences": ["privacy-breach"],
+        "notes": "-A omits . and .. entries while -a includes them"
+      },
+      {
+        "id": "ls-dereference",
+        "description": "Follows symlinks when listing, which may cause ls to access files outside the intended directory, potentially revealing information from unexpected or hidden locations.",
+        "patterns": [
+          {
+            "pattern": "ls $A -L $B",
+            "pattern_type": "flag",
+            "example": "ls -L /some/dir",
+            "match": {
+              "flags_any": ["-L", "--dereference"]
+            }
+          },
+          {
+            "pattern": "ls $A -H $B",
+            "pattern_type": "flag",
+            "example": "ls -H /some/link",
+            "match": {
+              "flags_any": ["-H", "--dereference-command-line"]
+            }
+          }
+        ],
+        "risk_tags": ["reads-files"],
+        "reversible": "yes",
+        "severity": "INFO",
+        "likely_consequences": ["privacy-breach"]
+      }
+    ],
+    "default_rule": {
+      "risk_tags": ["reads-files"],
+      "reversible": "yes",
+      "severity": "INFO"
+    }
+}
