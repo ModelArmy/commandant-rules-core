@@ -1,0 +1,19 @@
+/docs/
+/lib/
+/bin/
+/.shards/
+*.dwarf
+.DS_Store
+config/dev
+/libs/
+/.crystal/
+out/
+tmp*
+.enkaidu_history
+enkaidu.yml
+CLAUDE.md
+.deleted_files/
+.spectator-failures
+
+# This project defines Enkaidu macros and prompts
+# So we're not ignoring .enkaidu/
