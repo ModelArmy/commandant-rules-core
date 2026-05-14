@@ -1,425 +1,647 @@
 {
-   "tool": "grep",
-   "platform": "posix",
-   "tool_summary": "Searches files for lines matching a pattern and prints matching lines to standard output.",
-   "llm_confidence": "high",
-   "rules": [
-      {
-         "id": "grep-recursive",
-         "description": "Recursively searches directory trees, expanding the scope of files read beyond those explicitly specified on the command line. This can inadvertently expose sensitive files in subdirectories.",
-         "patterns": [
-            {
-               "pattern": "grep ... -r ...",
-               "pattern_type": "flag",
-               "example": "grep -r 'secret' /etc",
-               "match": {
-                  "flags_any": [
-                     "-r"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -R ...",
-               "pattern_type": "flag",
-               "example": "grep -R 'secret' /etc",
-               "match": {
-                  "flags_any": [
-                     "-R"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --recursive ...",
-               "pattern_type": "flag",
-               "example": "grep --recursive 'secret' .",
-               "match": {
-                  "flags_any": [
-                     "--recursive"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --directories ...",
-               "pattern_type": "flag",
-               "example": "grep --directories=recurse 'secret' /data",
-               "match": {
-                  "flags_any": [
-                     "--directories"
-                  ],
-                  "args_any": [
-                     "recurse",
-                     "read"
-                  ]
-               }
-            }
-         ],
-         "risk_tags": [
-            "reads-files",
-            "recursive"
-         ],
-         "reversible": "yes",
-         "severity": "WARNING",
-         "notes": "-r and -R differ in symlink handling: -R follows symlinks while -r does not in GNU grep. BSD grep treats them identically."
-      },
-      {
-         "id": "grep-binary",
-         "description": "Forces grep to process binary files as text, expanding the set of files read and potentially producing corrupted output from binary content. If output is consumed downstream (e.g., in scripts or automated processing), this risks data corruption.",
-         "patterns": [
-            {
-               "pattern": "grep ... -a ...",
-               "pattern_type": "flag",
-               "example": "grep -a 'pattern' /usr/lib/libc.so",
-               "match": {
-                  "flags_any": [
-                     "-a"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --text ...",
-               "pattern_type": "flag",
-               "example": "grep --text 'pattern' binaryfile",
-               "match": {
-                  "flags_any": [
-                     "--text"
-                  ]
-               }
-            }
-         ],
-         "risk_tags": [
-            "reads-files"
-         ],
-         "reversible": "yes",
-         "severity": "WARNING",
-         "likely_consequences": [
-            "data-corruption"
-         ]
-      },
-      {
-         "id": "grep-pattern-file",
-         "description": "Reads search patterns from an external file rather than from inline arguments. This expands the set of files read by grep to include the pattern source file, which may contain sensitive content if the file path is attacker-controlled.",
-         "patterns": [
-            {
-               "pattern": "grep ... -f ...",
-               "pattern_type": "flag",
-               "example": "grep -f patterns.txt datafile",
-               "match": {
-                  "flags_any": [
-                     "-f"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --file ...",
-               "pattern_type": "flag",
-               "example": "grep --file patterns.txt datafile",
-               "match": {
-                  "flags_any": [
-                     "--file"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --exclude-from ...",
-               "pattern_type": "flag",
-               "example": "grep --exclude-from blacklist.txt 'pattern' dir",
-               "match": {
-                  "flags_any": [
-                     "--exclude-from"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --include-from ...",
-               "pattern_type": "flag",
-               "example": "grep --include-from whitelist.txt 'pattern' dir",
-               "match": {
-                  "flags_any": [
-                     "--include-from"
-                  ]
-               }
-            }
-         ],
-         "risk_tags": [
-            "reads-files"
-         ],
-         "reversible": "yes",
-         "severity": "INFO"
-      },
-      {
-         "id": "grep-output-formatting",
-         "description": "Flags that change output format, matching mode, or display settings without expanding the set of files read. These include line numbers, counts, filename-only output, pattern inversion, color, and regex mode changes.",
-         "patterns": [
-            {
-               "pattern": "grep ... -n ...",
-               "pattern_type": "flag",
-               "example": "grep -n 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-n",
-                     "--line-number"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -c ...",
-               "pattern_type": "flag",
-               "example": "grep -c 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-c",
-                     "--count"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -l ...",
-               "pattern_type": "flag",
-               "example": "grep -l 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-l",
-                     "--files-with-matches"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -L ...",
-               "pattern_type": "flag",
-               "example": "grep -L 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-L",
-                     "--files-without-matches"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -o ...",
-               "pattern_type": "flag",
-               "example": "grep -o 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-o",
-                     "--only-matching"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -b ...",
-               "pattern_type": "flag",
-               "example": "grep -b 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-b",
-                     "--byte-offset"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -v ...",
-               "pattern_type": "flag",
-               "example": "grep -v 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-v",
-                     "--invert-match"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -q ...",
-               "pattern_type": "flag",
-               "example": "grep -q 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-q",
-                     "--quiet",
-                     "--silent"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -s ...",
-               "pattern_type": "flag",
-               "example": "grep -s 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-s",
-                     "--silent"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --color ...",
-               "pattern_type": "flag",
-               "example": "grep --color=always 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "--color",
-                     "--colors"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --line-buffered ...",
-               "pattern_type": "flag",
-               "example": "grep --line-buffered 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "--line-buffered"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -E ...",
-               "pattern_type": "flag",
-               "example": "grep -E 'pattern|alt' file",
-               "match": {
-                  "flags_any": [
-                     "-E",
-                     "--extended-regexp",
-                     "--regexp=extended"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -F ...",
-               "pattern_type": "flag",
-               "example": "grep -F 'literal' file",
-               "match": {
-                  "flags_any": [
-                     "-F",
-                     "--fixed-strings",
-                     "--fixed-regexp",
-                     "--fgrep"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -G ...",
-               "pattern_type": "flag",
-               "example": "grep -G 'basic pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-G",
-                     "--basic-regexp",
-                     "--basic-regex"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -i ...",
-               "pattern_type": "flag",
-               "example": "grep -i 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-i",
-                     "--ignore-case"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -w ...",
-               "pattern_type": "flag",
-               "example": "grep -w 'word' file",
-               "match": {
-                  "flags_any": [
-                     "-w",
-                     "--word-regexp"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -x ...",
-               "pattern_type": "flag",
-               "example": "grep -x 'line' file",
-               "match": {
-                  "flags_any": [
-                     "-x",
-                     "--line-regexp"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -z ...",
-               "pattern_type": "flag",
-               "example": "grep -z 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-z",
-                     "--null-data"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -m ...",
-               "pattern_type": "flag",
-               "example": "grep -m 5 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-m",
-                     "--max-count"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --include ...",
-               "pattern_type": "flag",
-               "example": "grep --include='*.log' 'pattern' dir",
-               "match": {
-                  "flags_any": [
-                     "--include",
-                     "--exclude"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --label ...",
-               "pattern_type": "flag",
-               "example": "grep --label 'my-label' pattern",
-               "match": {
-                  "flags_any": [
-                     "--label"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... --no-filename ...",
-               "pattern_type": "flag",
-               "example": "grep --no-filename 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "--no-filename",
-                     "-h"
-                  ]
-               }
-            },
-            {
-               "pattern": "grep ... -I ...",
-               "pattern_type": "flag",
-               "example": "grep -I 'pattern' file",
-               "match": {
-                  "flags_any": [
-                     "-I",
-                     "--binary-files=without-match",
-                     "--binary-files=skip"
-                  ]
-               }
-            }
-         ],
-         "risk_tags": [
-            "reads-files"
-         ],
-         "reversible": "yes",
-         "severity": "INFO"
-      }
-   ],
-   "default_rule": {
+  "tool": "grep",
+  "tool_summary": "Search text input for lines matching a given pattern.",
+  "platform": "posix",
+  "platform_notes": "GNU and BSD grep share the same core flag set covered in this ruleset (read recursive, binary mode, pattern file, invert, context lines, include/exclude). GNU grep's --perl-regexp (-P) and --line-buffered are GNU-specific; BSD grep's -P enables POSIX ERE, not Perl regex. If you need to assess Perl-regex usage, generate a linux-specific ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [
+    "--perl-regexp",
+    "--line-buffered",
+    "--mmap",
+    "--direcursive",
+    "--no-messages",
+    "--color=.*"
+  ],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "grep-recursive",
+      "description": "Recursive search traverses directory trees, reading all files including hidden files and symlinks (with -L). This significantly expands read scope beyond what would be accessed in a single file.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -r ... $PATHS ...",
+          "pattern_type": "flag",
+          "example": "grep -r 'password' /etc/",
+          "match": {
+            "flags_any": [
+              "-r",
+              "--recursive"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -R ... $PATHS ...",
+          "pattern_type": "flag",
+          "example": "grep -R 'secret' .",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--dereference-recursive"
+            ]
+          }
+        }
+      ],
       "risk_tags": [
-         "reads-files"
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The read operation itself cannot be undone; data that has been read is already exposed. The tool does not modify or delete any files.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "data-loss",
+        "privacy-breach"
+      ],
+      "notes": "-r follows symlinks but -R additionally dereferences them. Both traverse directory trees recursively."
+    },
+    {
+      "id": "grep-binary-as-text",
+      "description": "Forces grep to process binary files as text, which can expose binary content including embedded credentials, private keys, or other sensitive data that would otherwise be skipped by default.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -a ... $FILES ...",
+          "pattern_type": "flag",
+          "example": "grep -a 'key' /usr/lib/",
+          "match": {
+            "flags_any": [
+              "-a",
+              "--text"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --binary-files=text ... $FILES ...",
+          "pattern_type": "flag",
+          "example": "grep --binary-files=text 'token' ./bin/",
+          "match": {
+            "flags_any": [
+              "--binary-files=text"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
       ],
       "reversible": "yes",
-      "severity": "INFO"
-   }
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "Default grep behavior skips binary files. This flag overrides that protection."
+    },
+    {
+      "id": "grep-pattern-file",
+      "description": "Reads search patterns from an external file, expanding the read scope to include that file and loading patterns that may match sensitive content. May be used with untrusted pattern files.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -f $PATFILE ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -f /tmp/patterns.txt myfile.txt",
+          "match": {
+            "flags_any": [
+              "-f"
+            ],
+            "args_any": [
+              "^.+"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "The pattern file itself is read as input. Each pattern inside is applied as regex (or fixed string with -F), potentially matching sensitive content."
+    },
+    {
+      "id": "grep-invert-recursive",
+      "description": "Recursive search with inverted match (-v) shows all non-matching lines across the entire tree. This can expose a volume of data approaching the total content of the searched files, making it a broad data exfiltration vector.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... (-r | -R) ... -v ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -v 'public' /project/",
+          "match": {
+            "flags_all": [
+              "-v",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... (-r | -R) ... -v ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -v 'secret' -R .",
+          "match": {
+            "flags_all": [
+              "-v",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Read operation cannot be undone; non-matching content is fully exposed across all files in the tree, potentially far more than matching-lines search would reveal.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "data-loss",
+        "privacy-breach"
+      ],
+      "notes": "Both -r/-R and -v must be present. Order is flexible."
+    },
+    {
+      "id": "grep-context-recursive",
+      "description": "Recursive search with context lines (-A, -B, -C) expands output beyond matching lines, revealing surrounding content from each file. Combined with recursive search, this significantly increases data exposure beyond exact match results.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -r ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -A 10 'error' /var/log/",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-A"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -r ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -B 5 'warn' /var/log/",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-B"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -r ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -C 3 'test' /app/",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-C"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -R ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -A 20 'fail' /opt/",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-A"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -R ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -B 3 'warn' /opt/",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-B"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -R ... (-A | -B | -C) $NUM ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -C 5 'error' /opt/",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-C"
+            ],
+            "args_any": [
+              "^[0-9]+$"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Read operation cannot be undone; context lines reveal additional content beyond the matching lines across the entire directory tree.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "-A (after), -B (before), and -C (context, equals -A -B combined) each accept a numeric argument. Requires recursive flag for meaningful risk."
+    },
+    {
+      "id": "grep-files-with-matches-recursive",
+      "description": "Lists only filenames containing matches. Combined with recursive search, this traverses the entire directory tree and reveals which files contain sensitive patterns without showing the content itself. Useful for covert file enumeration across a tree.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -l ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -l 'password' /project/",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -l ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -l 'secret' .",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Enumerated filenames are revealed; the read operation itself cannot be undone.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "Lists only filenames that contain at least one match. Combined with recursive, reveals the file structure of the search tree through which files match."
+    },
+    {
+      "id": "grep-files-without-match-recursive",
+      "description": "Lists filenames that do NOT contain matches. Combined with recursive search, traverses the entire tree and reveals which files do not contain sensitive patterns. Can be used to fingerprint system state from outside the target directory.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -L ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -L 'admin' /project/",
+          "match": {
+            "flags_all": [
+              "-L",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -L ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -L 'secret' .",
+          "match": {
+            "flags_all": [
+              "-L",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "List of non-matching filenames is revealed; read operation cannot be undone.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "Opposite of -l. Reveals files that don't match the pattern. Can be used to enumerate file structure."
+    },
+    {
+      "id": "grep-quiet-recursive",
+      "description": "Suppresses all output. Combined with recursive search, this silently traverses directory trees reading all files without producing output. Commonly used for covert pattern verification or backdoor detection where the operator only cares about success/failure, not content.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -q ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -q 'password' /etc/",
+          "match": {
+            "flags_all": [
+              "-q",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -q ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -q 'secret' .",
+          "match": {
+            "flags_all": [
+              "-q",
+              "-R"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --quiet ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep --quiet --recursive 'password' /etc/",
+          "match": {
+            "flags_all": [
+              "--quiet",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --quiet ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep --quiet --recursive 'secret' .",
+          "match": {
+            "flags_all": [
+              "--quiet",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Files are read but output is suppressed; the operator gains knowledge while appearing unobtrusive. Read operation cannot be undone.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach",
+        "computer-security-compromise"
+      ],
+      "notes": "-q, --quiet, and --silent suppress all output. The recursive read still occurs; only output is prevented. Often used for covert verification."
+    },
+    {
+      "id": "grep-count-recursive",
+      "description": "Shows count of matching lines per file. Combined with recursive search, reveals which files contain patterns and how many, without exposing the matched content. Can be used to fingerprint system state or detect presence of specific patterns across a tree.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -c ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -c 'password' /project/",
+          "match": {
+            "flags_all": [
+              "-c",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... -c ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -c 'secret' .",
+          "match": {
+            "flags_all": [
+              "-c",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Counts per file are revealed; read operation cannot be undone.",
+      "severity": "INFO",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "-c and --count. Shows line counts per file. Combined with recursive, reveals which files in the tree contain matches."
+    },
+    {
+      "id": "grep-quiet",
+      "description": "Suppresses all output. Without recursive search, this is used to check for patterns in specific files without revealing content. Can be used for covert verification of specific files.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -q ... $FILES ...",
+          "pattern_type": "flag",
+          "example": "grep -q 'password' /etc/passwd",
+          "match": {
+            "flags_any": [
+              "-q",
+              "--quiet",
+              "--silent"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "depends",
+      "reversible_note": "File is read but output is suppressed; the operator gains knowledge covertly.",
+      "severity": "INFO",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "-q, --quiet, --silent. Without recursive, only reads the explicitly specified files."
+    },
+    {
+      "id": "grep-targeted-files",
+      "description": "--include, --exclude, and --exclude-dir filters change which files grep searches. With --include, this can narrow search scope to sensitive file types (e.g., *.pem, *.key, .env). With --exclude, the user may unintentionally exclude files that should be audited. These flags are most impactful when combined with recursive search.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... --include $PATTERN ...",
+          "pattern_type": "flag",
+          "example": "grep 'secret' --include '*.pem' -r .",
+          "match": {
+            "flags_any": [
+              "--include"
+            ],
+            "args_any": [
+              "^.+\\\\..+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --exclude $PATTERN ...",
+          "pattern_type": "flag",
+          "example": "grep 'error' --exclude '*.log' -r /var/",
+          "match": {
+            "flags_any": [
+              "--exclude"
+            ],
+            "args_any": [
+              "^.+\\\\..+$"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --exclude-dir $DIR ...",
+          "pattern_type": "flag",
+          "example": "grep 'password' --exclude-dir 'node_modules' -r /app/",
+          "match": {
+            "flags_any": [
+              "--exclude-dir"
+            ],
+            "args_any": [
+              "^.+$"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "These filter flags modify the file selection scope. --include narrows to matching names; --exclude and --exclude-dir remove files/dirs from the search set."
+    },
+    {
+      "id": "grep-include-exclude-recursive",
+      "description": "Combined --include/--exclude flags with recursive search create highly targeted reads that can exfiltrate specific sensitive files across entire directory trees. This is the most dangerous variation of the targeted-files pattern.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... --include $PATTERN ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep 'password' --include '*.env' --include '*.pem' -r /",
+          "match": {
+            "flags_all": [
+              "--include",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep $OPTS ... --include $PATTERN ... (-r | -R) ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R --include '*.key' --exclude-dir 'public' .",
+          "match": {
+            "flags_all": [
+              "--include",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "all_match": true,
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Targeted files across directory trees are fully exposed.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "data-loss",
+        "privacy-breach"
+      ],
+      "notes": "Both --include (or --exclude) and a recursive flag must be present. This combination can systematically exfiltrate all files matching a sensitive pattern across a tree."
+    },
+    {
+      "id": "grep-null-data",
+      "description": "Treats input as NUL-separated rather than newline-separated. Can be used to search through binary content or null-padded files that would otherwise not match line-based patterns.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... -z ...",
+          "pattern_type": "flag",
+          "example": "grep -z 'secret' binaries/",
+          "match": {
+            "flags_any": [
+              "-z",
+              "--null-data"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": []
+    },
+    {
+      "id": "grep-color",
+      "description": "Adds color markers to matching lines in output. Only affects output formatting and has no impact on read scope or data exposure.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... --color ...",
+          "pattern_type": "flag",
+          "example": "grep --color=always -r 'test' .",
+          "match": {
+            "flags_any": [
+              "--color",
+              "--color=.*"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": []
+    },
+    {
+      "id": "grep-no-messages",
+      "description": "Suppresses error messages for inaccessible files. While this hides errors (which could be a concern for auditing), it does not expand read scope.",
+      "patterns": [
+        {
+          "pattern": "grep $OPTS ... --no-messages ...",
+          "pattern_type": "flag",
+          "example": "grep --no-messages -r 'secret' .",
+          "match": {
+            "flags_any": [
+              "--no-messages"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
 }

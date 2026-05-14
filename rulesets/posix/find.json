@@ -1,94 +1,328 @@
 {
-   "tool": "find",
-   "tool_summary": "Recursively searches directory trees and performs actions on matched files.",
-   "platform": "posix",
-   "llm_confidence": "high",
-   "unknown_flags": [],
-   "is_multiplexer": false,
-   "option_abbreviations": {},
-   "rules": [
-     {
-       "id": "find-executes-code",
-       "description": "Invokes an arbitrary command on each matched file via -exec. This allows execution of unvalidated code and can modify, delete, or exfiltrate files.",
-       "patterns": [
-         {
-           "pattern": "find $PATH -exec $CMD ...",
-           "pattern_type": "flag",
-           "example": "find /tmp -name '*.tmp' -exec rm {} \\;",
-           "match": {
-             "flags_any": ["-exec"]
-           }
-         }
-       ],
-       "risk_tags": ["executes-code", "recursive"],
-       "reversible": "depends",
-       "reversible_note": "Depends on the command executed — rm and mv are irreversible without backups; cat and ls are safe.",
-       "severity": "ERROR",
-       "likely_consequences": ["unsafe-code-execution", "data-loss", "data-corruption"],
-       "notes": "The {} placeholder is replaced by each found file path. Use + instead of \\; to pass multiple paths as batch arguments to the command."
-     },
-     {
-       "id": "find-execdir-executes-code",
-       "description": "Invokes a command from the directory of each matched file via -execdir. Higher risk than -exec due to potential path traversal or executing in the context of untrusted directories.",
-       "patterns": [
-         {
-           "pattern": "find $PATH -execdir $CMD ...",
-           "pattern_type": "flag",
-           "example": "find . -name '*.sh' -execdir bash {} \\;",
-           "match": {
-             "flags_any": ["-execdir"]
-           }
-         }
-       ],
-       "risk_tags": ["executes-code", "recursive"],
-       "reversible": "depends",
-       "reversible_note": "Depends on the command executed — same considerations as -exec.",
-       "severity": "ERROR",
-       "likely_consequences": ["unsafe-code-execution", "data-corruption"],
-       "notes": "Like -exec but cd s into the file's directory before executing. This mitigates some symlink attacks but introduces directory-context risks where the working directory is untrusted."
-     },
-     {
-       "id": "find-delete-files",
-       "description": "Deletes all matched files via -delete flag. No confirmation prompt; files are removed immediately.",
-       "patterns": [
-         {
-           "pattern": "find $PATH -delete",
-           "pattern_type": "flag",
-           "example": "find /tmp -type f -mtime +30 -delete",
-           "match": {
-             "flags_any": ["-delete"]
-           }
-         }
-       ],
-       "risk_tags": ["deletes-files", "recursive", "irreversible"],
-       "reversible": "no",
-       "severity": "ERROR",
-       "likely_consequences": ["data-loss", "data-corruption"]
-     },
-     {
-       "id": "find-executes-code-ok",
-       "description": "Similar to -exec but prompts the user for confirmation before executing each command. Provides a safety margin but does not prevent the action if confirmed.",
-       "patterns": [
-         {
-           "pattern": "find $PATH -ok $CMD ...",
-           "pattern_type": "flag",
-           "example": "find /tmp -name 'secret*' -ok cat {} \\;",
-           "match": {
-             "flags_any": ["-ok"]
-           }
-         }
-       ],
-       "risk_tags": ["executes-code", "recursive"],
-       "reversible": "depends",
-       "reversible_note": "Depends on the command executed and whether the user confirms each invocation.",
-       "severity": "WARNING",
-       "likely_consequences": ["privacy-breach", "unsafe-code-execution"],
-       "notes": "Like -exec but presents a Y/n prompt per matched file. In non-interactive shells this will fail."
-     }
-   ],
-   "default_rule": {
-     "risk_tags": ["reads-files", "recursive"],
-     "reversible": "yes",
-     "severity": "INFO"
-   }
+    "tool": "find",
+    "tool_summary": "Locates files in a directory tree and optionally performs actions on matched files.",
+    "platform": "posix",
+    "platform_notes": "POSIX find behavior is consistent across POSIX-compliant implementations (GNU and BSD). No platform-specific flag differences to note.",
+    "llm_confidence": "high",
+    "unknown_flags": [],
+    "is_multiplexer": false,
+    "option_abbreviations": {},
+    "default_rule": {
+        "risk_tags": [
+            "reads-files",
+            "recursive"
+        ],
+        "reversible": "yes",
+        "severity": "INFO",
+        "likely_consequences": []
+    },
+    "rules": [
+        {
+            "id": "find-executes-code",
+            "description": "Triggers when find is invoked with -exec or -execdir, causing it to execute an arbitrary command on every matched file. This is the most dangerous flag on find — it can read, modify, delete, or exfiltrate data with the privileges of the find caller. -exec runs the command in the starting directory; -execdir runs it in the directory containing the matched file, which is slightly safer but equally capable of destructive actions. If the command passed to -exec contains shell metacharacters, a shell is invoked to interpret them, further expanding risk via variable expansion, pipes, and redirections.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... -exec $CMD ... $TERM",
+                    "pattern_type": "flag",
+                    "example": "find . -name '*.log' -exec rm {} \\;",
+                    "match": {
+                        "flags_any": [
+                            "-exec",
+                            "-execdir"
+                        ],
+                        "args_none": [
+                            "-ok",
+                            "-okdir"
+                        ]
+                    }
+                },
+                {
+                    "pattern": "find $PATH ... -exec \\$SHELL \\-c $STR $TERM",
+                    "pattern_type": "flag",
+                    "example": "find . -type f -exec sh -c 'echo {} > /tmp/x' \\;",
+                    "match": {
+                        "flags_all": [
+                            "-exec",
+                            "-execdir"
+                        ],
+                        "args_any": [
+                            "sh",
+                            "bash",
+                            "dash",
+                            "zsh",
+                            "csh",
+                            "ksh",
+                            "sh"
+                        ],
+                        "raw_pattern": "-exec\\s+\\$\\{SHELL\\s|-exec\\s+\\(sh\\|bash\\|dash\\|zsh\\|csh\\|ksh\\)"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "executes-code"
+            ],
+            "reversible": "depends",
+            "reversible_note": "The find invocation itself is reversible (do not run the command), but any commands already executed may have caused irreversible changes such as file deletion or modification, which cannot be undone without backups.",
+            "severity": "ERROR",
+            "likely_consequences": [
+                "unsafe-code-execution",
+                "computer-security-compromise"
+            ]
+        },
+        {
+            "id": "find-executes-code-prompted",
+            "description": "Triggers when find is invoked with -ok or -okdir, which behave like -exec/-execdir but prompt for confirmation before each action. While prompting provides a safety net, the operator can still affirm many actions, and in automated or scripted contexts (e.g., echoed 'y' or piped input), the prompt is effectively bypassed. The risk profile is similar to -exec but mitigated by the interactive guard.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... -ok $CMD ... $TERM",
+                    "pattern_type": "flag",
+                    "example": "find . -name '*.log' -ok rm {} \\;",
+                    "match": {
+                        "flags_any": [
+                            "-ok",
+                            "-okdir"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "executes-code"
+            ],
+            "reversible": "depends",
+            "reversible_note": "Each action requires operator confirmation, but in scripted contexts where input is automated, prompts can be bypassed. Confirmed actions are irreversible.",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "unsafe-code-execution",
+                "computer-security-compromise"
+            ]
+        },
+        {
+            "id": "find-deletes-files",
+            "description": "Triggers when find is invoked with -delete, which unconditionally deletes every matched file without prompting. When combined with -depth, this operates recursively on directory trees including non-empty directories, making it particularly destructive. This removes files permanently with no undo.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... -delete",
+                    "pattern_type": "flag",
+                    "example": "find . -type f -name '*.tmp' -delete",
+                    "match": {
+                        "flags_any": [
+                            "-delete"
+                        ]
+                    }
+                },
+                {
+                    "pattern": "find $PATH ... -depth ... -delete",
+                    "pattern_type": "flag-argument-combination",
+                    "example": "find . -name '*.log' -depth -delete",
+                    "match": {
+                        "flags_any": [
+                            "-delete"
+                        ],
+                        "args_any": [
+                            "-depth"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "deletes-files",
+                "irreversible",
+                "recursive"
+            ],
+            "reversible": "no",
+            "severity": "ERROR",
+            "likely_consequences": [
+                "data-loss"
+            ]
+        },
+        {
+            "id": "find-follows-symlinks-all",
+            "description": "Triggers when find is invoked with -L or -follow, causing it to follow ALL symbolic links encountered during traversal, not just those in starting paths. This can cause find to access or operate on files outside the intended directory tree, including files in deeply nested or unexpected locations reached through symlink chains. This also enables symlink-based directory traversal attacks where the operator believes they are scoping operations to a specific directory.",
+            "patterns": [
+                {
+                    "pattern": "find -L $PATH ...",
+                    "pattern_type": "flag",
+                    "example": "find -L /data -name '*.conf'",
+                    "match": {
+                        "flags_any": [
+                            "-L"
+                        ]
+                    }
+                },
+                {
+                    "pattern": "find -follow $PATH ...",
+                    "pattern_type": "flag",
+                    "example": "find -follow /var -type f",
+                    "match": {
+                        "flags_any": [
+                            "-follow"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files",
+                "recursive"
+            ],
+            "reversible": "yes",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "privacy-breach",
+                "computer-security-compromise"
+            ]
+        },
+        {
+            "id": "find-follows-symlinks-start",
+            "description": "Triggers when find is invoked with -H, causing it to follow only symbolic links given as starting-point arguments, not symlinks discovered during traversal. This is less risky than -L but can still cause find to operate on files outside the starting directory if a starting path is a symlink to an unexpected location.",
+            "patterns": [
+                {
+                    "pattern": "find -H $PATH ...",
+                    "pattern_type": "flag",
+                    "example": "find -H /symlink-to-sensitive -name '*.conf'",
+                    "match": {
+                        "flags_any": [
+                            "-H"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files"
+            ],
+            "reversible": "yes",
+            "severity": "INFO",
+            "likely_consequences": []
+        },
+        {
+            "id": "find-pipe-xargs",
+            "description": "Triggers when find's output is piped to xargs or similar command-accumulating tools. This is one of the most common dangerous find patterns in practice — file paths from find are passed as arguments to an arbitrary command (commonly rm, mv, cp, or other destructive commands) in potentially very large batches. Unlike -exec which runs the command once per file or in small batches, xargs can pass many arguments at once, increasing blast radius. Also covers pipes to sh/bash where find output becomes input to a shell script.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... | xargs $CMD ...",
+                    "pattern_type": "pipe",
+                    "example": "find . -type f -name '*.log' | xargs rm",
+                    "match": {
+                        "raw_pattern": "find\\s+.*\\|\\s*xargs\\b"
+                    }
+                },
+                {
+                    "pattern": "find $PATH ... | \\$SHELL",
+                    "pattern_type": "pipe",
+                    "example": "find . -type f | sh process.sh",
+                    "match": {
+                        "raw_pattern": "find\\s+.*\\|\\s*(sh\\|bash\\|dash\\|zsh\\|csh|ksh)"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "executes-code",
+                "recursive"
+            ],
+            "reversible": "depends",
+            "reversible_note": "The pipe invocation is reversible if caught before execution, but once xargs has dispatched commands to multiple files, the resulting actions may be irreversible.",
+            "severity": "ERROR",
+            "likely_consequences": [
+                "unsafe-code-execution",
+                "data-loss",
+                "computer-security-compromise"
+            ]
+        },
+        {
+            "id": "find-subshell-input",
+            "description": "Triggers when find's arguments (typically the starting path or search criteria) are generated by a subshell or command substitution. This means find operates on whatever paths the inner command outputs, which can include unexpected files if the command substitution returns untrusted or malformed data. Common with $(...) or backtick syntax. Particularly dangerous when the subshell contains variables that could be influenced by environment or user input.",
+            "patterns": [
+                {
+                    "pattern": "find $(...) ...",
+                    "pattern_type": "subshell",
+                    "example": "find $(getconf PATH) -name '*.so'",
+                    "match": {
+                        "raw_pattern": "find\\s+\\$\\("
+                    }
+                },
+                {
+                    "pattern": "find `...` ...",
+                    "pattern_type": "subshell",
+                    "example": "find `pwd`/.. -name '*.conf'",
+                    "match": {
+                        "raw_pattern": "find\\s+`"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "executes-code"
+            ],
+            "reversible": "depends",
+            "reversible_note": "Reversible if caught before execution. If the subshell produces unexpected paths and find operates on them, those actions may be irreversible.",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "unsafe-code-execution",
+                "data-loss"
+            ]
+        },
+        {
+            "id": "find-verbose-output",
+            "description": "Triggers when find is invoked with -ls or -printf, which produce verbose file metadata output (permissions, ownership, size, timestamps, device info) beyond the default path-only output. These do not materially expand file access scope but reveal additional filesystem metadata that could disclose sensitive information in environments where file permissions, ownership, or device types should not be exposed.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... -ls",
+                    "pattern_type": "flag",
+                    "example": "find . -type f -ls",
+                    "match": {
+                        "flags_any": [
+                            "-ls"
+                        ]
+                    }
+                },
+                {
+                    "pattern": "find $PATH ... -printf $FORMAT",
+                    "pattern_type": "flag",
+                    "example": "find . -type f -printf '%m %u %g %s %p\\n'",
+                    "match": {
+                        "flags_any": [
+                            "-printf"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files"
+            ],
+            "reversible": "yes",
+            "severity": "INFO",
+            "likely_consequences": [
+                "privacy-breach"
+            ]
+        },
+        {
+            "id": "find-write-output",
+            "description": "Triggers when find's output is redirected to a file (e.g., > or >>). While find itself does not write to files directly, piping or redirecting its output to an arbitrary file can be used to exfiltrate directory listings or file metadata. -ls or -printf combined with output redirection is particularly notable since they produce richer data.",
+            "patterns": [
+                {
+                    "pattern": "find $PATH ... > $FILE",
+                    "pattern_type": "flag",
+                    "example": "find / -type f > /tmp/manifest.txt",
+                    "match": {
+                        "raw_pattern": "find\\s+.*\\s>\\s"
+                    }
+                },
+                {
+                    "pattern": "find $PATH ... >> $FILE",
+                    "pattern_type": "flag",
+                    "example": "find . -name '*.pem' >> /tmp/exposed.txt",
+                    "match": {
+                        "raw_pattern": "find\\s+.*\\s>>\\s"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files",
+                "network-egress"
+            ],
+            "reversible": "yes",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "privacy-breach"
+            ]
+        }
+    ]
 }
