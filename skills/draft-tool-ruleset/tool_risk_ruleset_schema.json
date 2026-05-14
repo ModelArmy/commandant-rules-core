@@ -6,7 +6,15 @@
   "type": "object",
   "required": [
     "tool",
-    "rules"
+    "tool_summary",
+    "platform",
+    "platform_notes",
+    "llm_confidence",
+    "unknown_flags",
+    "rules",
+    "is_multiplexer",
+    "option_abbreviations",
+    "default_rule"
   ],
   "additionalProperties": false,
   "properties": {
@@ -72,7 +80,8 @@
           "patterns",
           "risk_tags",
           "reversible",
-          "severity"
+          "severity",
+          "likely_consequences"
         ],
         "additionalProperties": false,
         "properties": {

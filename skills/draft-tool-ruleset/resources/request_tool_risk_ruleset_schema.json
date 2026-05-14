@@ -1,0 +1,293 @@
+{
+  "name": "tool_risk_ruleset_schema",
+  "description": "Schema for LLM-generated risk rules for a single shell tool.",
+  "strict": true,
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "tool_risk_ruleset",
+    "title": "Tool Risk Ruleset",
+    "description": "Schema for LLM-generated risk rules for a single shell tool.",
+    "type": "object",
+    "required": [
+      "tool",
+      "tool_summary",
+      "platform",
+      "platform_notes",
+      "llm_confidence",
+      "unknown_flags",
+      "rules",
+      "is_multiplexer",
+      "option_abbreviations",
+      "default_rule"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "tool": {
+        "type": "string",
+        "description": "The shell tool this ruleset applies to. E.g. 'find', 'rm', 'sed'."
+      },
+      "tool_summary": {
+        "type": "string",
+        "description": "One sentence describing what this tool does, for use in the confirmation table."
+      },
+      "platform": {
+        "type": "string",
+        "enum": [
+          "linux",
+          "macos",
+          "windows",
+          "posix"
+        ],
+        "description": "The platform this ruleset targets. 'posix' means the ruleset is valid for both linux and macos without platform-specific caveats. Use 'linux' or 'macos' when flag semantics differ between GNU and BSD implementations. Use 'windows' for cmd.exe/PowerShell tools with Windows-style syntax."
+      },
+      "platform_notes": {
+        "type": "string",
+        "description": "Optional. Describes significant behavioural differences on other platforms \u2014 e.g. 'GNU sed -i requires no argument; BSD sed -i requires a suffix argument, even if empty.' Aids the human reviewer in deciding whether a sibling ruleset is needed."
+      },
+      "llm_confidence": {
+        "type": "string",
+        "enum": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "description": "Model's self-assessed confidence in its knowledge of this tool."
+      },
+      "unknown_flags": {
+        "type": "array",
+        "description": "Flags or options the model is uncertain about. Flagged for human review.",
+        "items": {
+          "type": "string"
+        }
+      },
+      "is_multiplexer": {
+        "type": "boolean",
+        "default": false,
+        "description": "True if this tool dispatches to subcommands (e.g. busybox, toybox). When true, the inner subcommand must be unwrapped and assessed separately before this ruleset applies."
+      },
+      "option_abbreviations": {
+        "type": "object",
+        "description": "Map of known GNU long-option abbreviations to their canonical forms. Used by the argument scanner to expand abbreviated flags before pattern matching. E.g. { '--compress-prog': '--compress-program' }.",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "rules": {
+        "type": "array",
+        "description": "Ordered list of rules. Evaluated top-to-bottom; first match wins unless all_match is true.",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "description",
+            "patterns",
+            "risk_tags",
+            "reversible",
+            "severity",
+            "likely_consequences"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique rule identifier. Convention: {tool}-{risk-summary}. E.g. 'find-executes-code'.",
+              "pattern": "^[a-z0-9-]+$"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable explanation of what this rule matches and why it is risky."
+            },
+            "patterns": {
+              "type": "array",
+              "description": "List of flag/argument patterns that trigger this rule.",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "pattern",
+                  "pattern_type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "description": "The pattern string. Semgrep pattern syntax for bash."
+                  },
+                  "pattern_type": {
+                    "type": "string",
+                    "enum": [
+                      "flag",
+                      "argument",
+                      "flag-argument-combination",
+                      "subshell",
+                      "pipe"
+                    ],
+                    "description": "How to interpret the pattern."
+                  },
+                  "example": {
+                    "type": "string",
+                    "description": "Concrete example command that matches this pattern."
+                  },
+                  "match": {
+                    "type": "object",
+                    "description": "Structured evaluable form of this pattern. Used by the shard's runtime evaluator. 'pattern' is for Semgrep offline verification; 'match' is for runtime evaluation. Both must be populated.",
+                    "additionalProperties": false,
+                    "properties": {
+                      "flags_any": {
+                        "type": "array",
+                        "description": "Rule fires if any of these flags are present in the parsed command.",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "flags_all": {
+                        "type": "array",
+                        "description": "Rule fires only if ALL of these flags are present in the parsed command.",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "args_any": {
+                        "type": "array",
+                        "description": "Rule fires if any of these values appear in the parsed arguments.",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "args_none": {
+                        "type": "array",
+                        "description": "Rule fires only if NONE of these values appear in the parsed arguments. Use for 'flag present but argument absent' patterns.",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "raw_pattern": {
+                        "type": "string",
+                        "description": "Optional regex applied to the raw command string. Use only when flag/arg matching is insufficient \u2014 e.g. for subshell detection or line-continuation sequences."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "risk_tags": {
+              "type": "array",
+              "description": "Intrinsic risk categories triggered by this rule.",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "reads-files",
+                  "writes-files",
+                  "deletes-files",
+                  "recursive",
+                  "irreversible",
+                  "executes-code",
+                  "network-egress",
+                  "elevated-privilege",
+                  "modifies-environment",
+                  "subshell"
+                ]
+              }
+            },
+            "reversible": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no",
+                "depends"
+              ],
+              "description": "Whether the effect of this command can be undone. 'depends' requires a note."
+            },
+            "reversible_note": {
+              "type": "string",
+              "description": "Required when reversible is 'depends'. Explains the condition."
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "INFO",
+                "WARNING",
+                "ERROR"
+              ],
+              "description": "INFO: safe default. WARNING: notable risk. ERROR: destructive or irreversible."
+            },
+            "all_match": {
+              "type": "boolean",
+              "default": false,
+              "description": "If true, all patterns must match (AND). Default false means any match (OR)."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Optional. Flag combinations, edge cases, or caveats the reviewer should check."
+            },
+            "likely_consequences": {
+              "type": "array",
+              "description": "Optional. Maps this rule's risk to user-facing outcome categories (from OpenAgentSafety taxonomy). Aids non-technical users in understanding impact.",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "data-loss",
+                  "data-corruption",
+                  "privacy-breach",
+                  "computer-security-compromise",
+                  "unsafe-code-execution",
+                  "financial-loss",
+                  "legal-violation",
+                  "harmful-decision"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "default_rule": {
+        "type": "object",
+        "description": "Fallback rule applied when no other rule matches. Should reflect the tool's safest baseline behavior.",
+        "required": [
+          "risk_tags",
+          "reversible",
+          "severity"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "risk_tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "reads-files",
+                "writes-files",
+                "deletes-files",
+                "recursive",
+                "irreversible",
+                "executes-code",
+                "network-egress",
+                "elevated-privilege",
+                "modifies-environment",
+                "subshell"
+              ]
+            }
+          },
+          "reversible": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no",
+              "depends"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "INFO",
+              "WARNING",
+              "ERROR"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
