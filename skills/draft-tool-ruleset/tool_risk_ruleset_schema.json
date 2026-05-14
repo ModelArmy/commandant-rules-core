@@ -8,12 +8,11 @@
     "tool",
     "tool_summary",
     "platform",
-    "platform_notes",
     "llm_confidence",
     "unknown_flags",
-    "rules",
     "is_multiplexer",
     "option_abbreviations",
+    "rules",
     "default_rule"
   ],
   "additionalProperties": false,
@@ -80,8 +79,7 @@
           "patterns",
           "risk_tags",
           "reversible",
-          "severity",
-          "likely_consequences"
+          "severity"
         ],
         "additionalProperties": false,
         "properties": {
@@ -102,7 +100,9 @@
               "type": "object",
               "required": [
                 "pattern",
-                "pattern_type"
+                "pattern_type",
+                "example",
+                "match"
               ],
               "additionalProperties": false,
               "properties": {
@@ -127,7 +127,7 @@
                 },
                 "match": {
                   "type": "object",
-                  "description": "Structured evaluable form of this pattern. Used by the shard's runtime evaluator. 'pattern' is for Semgrep offline verification; 'match' is for runtime evaluation. Both must be populated.",
+                  "description": "Structured evaluable form of this pattern. Used by the shard's runtime evaluator. 'pattern' is for Semgrep offline verification; 'match' is for runtime evaluation. Both must be populated. At least one of flags_any, flags_all, args_any, args_none, or raw_pattern must be present.",
                   "additionalProperties": false,
                   "properties": {
                     "flags_any": {
@@ -162,7 +162,8 @@
                       "type": "string",
                       "description": "Optional regex applied to the raw command string. Use only when flag/arg matching is insufficient \u2014 e.g. for subshell detection or line-continuation sequences."
                     }
-                  }
+                  },
+                  "minProperties": 1
                 }
               }
             }
@@ -235,6 +236,21 @@
               ]
             }
           }
+        },
+        "if": {
+          "properties": {
+            "reversible": {
+              "const": "depends"
+            }
+          },
+          "required": [
+            "reversible"
+          ]
+        },
+        "then": {
+          "required": [
+            "reversible_note"
+          ]
         }
       }
     },
@@ -282,6 +298,32 @@
             "ERROR"
           ]
         }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "platform": {
+        "enum": [
+          "linux",
+          "macos",
+          "windows"
+        ]
+      }
+    },
+    "required": [
+      "platform"
+    ]
+  },
+  "then": {
+    "required": [
+      "platform_notes"
+    ],
+    "properties": {
+      "platform_notes": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Required for linux/macos/windows. Describes significant behavioural differences on sibling platforms."
       }
     }
   }
