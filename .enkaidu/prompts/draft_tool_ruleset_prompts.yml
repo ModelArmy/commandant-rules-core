@@ -22,8 +22,39 @@ draft_tool_ruleset.generate:
       - Severity WARNING requires a concrete, direct threat vector beyond "more information is revealed." Flags that change output format or verbosity without materially expanding access scope should be INFO unless combined with a flag that does.
       - Must use SemGrep style patterns. Do not use regex or any other format.
 
-draft_tool_ruleset.continue:
+draft_tool_ruleset.continue_to_generate:
   description: Internal, used to tell a model to continue in case it stalls.
   template: |
             Save the ruleset JSON file if you have not already done so.
+            When in doubt, it is better to be specific and comprehensive than miss a rule that matters.
+
+draft_tool_ruleset.review:
+  description: Review an existing tool risk ruleset JSON file for a tool / platform.
+  arguments:
+    tool:
+      description: The command line tool to review
+    platform:
+      description: The platform in which the tool runs. One of `linux`, `macos`, `windows`, or `posix`
+    notes:
+      description: Any additional notes or instructions specific to this tool / platform? Enter if none.
+  template: |
+    - |
+      Analyze the existing tool risk rulset for the following shell tool and identify any changes or improvements.
+
+      Tool: {{arg.tool}}
+      Platform: {{arg.platform}}
+
+      {{arg.notes}}
+      Update the tool risk ruleset JSON object conforming to the provided schema in
+      `./rulesets/{{arg.platform}}/{{arg.tool}}.json`
+
+      Additional guidance
+      - Severity WARNING requires a concrete, direct threat vector beyond "more information is revealed." Flags that change output format or verbosity without materially expanding access scope should be INFO unless combined with a flag that does.
+      - Must use SemGrep style patterns. Do not use regex or any other format.
+
+draft_tool_ruleset.continue_to_review:
+  description: Internal, used to tell a model to continue to review in case it stalls.
+  template: |
+            Update the ruleset JSON file if you have any changes that will improve it,
+            and you haven't done so already,
             When in doubt, it is better to be specific and comprehensive than miss a rule that matters.
