@@ -488,16 +488,15 @@
     },
     {
       "id": "grep-devices-read",
-      "description": "Forces grep to read device files (such as /dev/sda, /dev/mem, FIFOs) as regular files. Without --devices=read (which is the GNU default), grep may still read device files; this flag makes it explicit. Reading device files can expose hardware state, kernel memory, or other sensitive data beyond normal file content.",
+      "description": "Forces grep to read device files (such as /dev/sda, /dev/mem, FIFOs) as regular files. Reading device files can expose hardware state, kernel memory, or other sensitive data beyond normal file content.",
       "patterns": [
         {
-          "pattern": "grep ... --devices=READ ...",
+          "pattern": "grep ... --devices=read ...",
           "pattern_type": "flag-argument-combination",
           "example": "grep 'data' --devices=read /dev/sda",
           "match": {
             "flags_any": [
-              "--devices=read",
-              "--devices=CHUNK"
+              "--devices=read"
             ]
           }
         }
@@ -510,7 +509,83 @@
       "likely_consequences": [
         "privacy-breach"
       ],
-      "notes": "--devices=read makes grep read device files as regular files; --devices=CHANK does the same but in chunks. --devices=skip (not listed) explicitly prevents this behavior."
+      "notes": "--devices=read makes grep read device files as regular files. --devices=skip explicitly prevents this behavior."
+    },
+    {
+      "id": "grep-recursive-extract",
+      "description": "Recursive search with --only-matching (-o) extracts only the matched text from every file across the entire directory tree. This produces clean, targeted output with no surrounding context — a low-noise exfiltration vector that yields only the sensitive data itself.",
+      "patterns": [
+        {
+          "pattern": "grep ... -r ... -o ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -o '[0-9a-f]{40}' /project/",
+          "match": {
+            "flags_all": [
+              "-o",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep ... -R ... -o ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -o 'password=\\S+' .",
+          "match": {
+            "flags_all": [
+              "-o",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "-o with recursive search extracts only matched text, producing clean output ideal for exfiltration."
+    },
+    {
+      "id": "grep-recursive-pattern-file",
+      "description": "Recursive search with -f loads search patterns from an external file and applies them across the entire directory tree. The external file may contain patterns crafted to extract sensitive content, and the recursive scope means the full tree is searched.",
+      "patterns": [
+        {
+          "pattern": "grep ... -r ... -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -r -f /tmp/keywords.txt /data/",
+          "match": {
+            "flags_all": [
+              "-f",
+              "-r"
+            ]
+          }
+        },
+        {
+          "pattern": "grep ... -R ... -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "grep -R -f sensitive-patterns.txt .",
+          "match": {
+            "flags_all": [
+              "-f",
+              "-R"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "notes": "Both -r/-R and -f must be present. The pattern file itself is also read as input."
     },
     {
       "id": "grep-directories-read",
@@ -523,9 +598,12 @@
           "match": {
             "flags_any": [
               "--directories=read",
-              "--directories=READ",
-              "-d read",
-              "-d READ"
+              "--directories=recurse",
+              "-d"
+            ],
+            "args_any": [
+              "read",
+              "recurse"
             ]
           }
         },
