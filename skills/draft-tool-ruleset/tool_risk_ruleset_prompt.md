@@ -38,6 +38,8 @@ Include `likely_consequences` only where the risk is concrete and direct:
 | `legal-violation`              | Actions that may violate laws or regulations   |
 | `harmful-decision`             | Broader harmful consequences                   |
 
+`data-loss` means files are permanently destroyed. It requires `writes-files`, `deletes-files`, or `irreversible` in `risk_tags`. Do not apply it to read-only operations — reading sensitive content is `privacy-breach`, not `data-loss`.
+
 ### Severity Calibration
 
 | Severity  | When                                                              |
@@ -72,6 +74,8 @@ Every pattern requires both `pattern` and `match`:
 - `args_none` — fires only if NONE of these values appear
 - `raw_pattern` — regex on raw string; use only when flag/arg matching is genuinely insufficient
 
+**All values in `flags_any`, `flags_all`, `args_any`, and `args_none` are exact strings — not regex.** Do not put regex syntax in these fields. For variable-value flags like `--color=always`, enumerate each variant explicitly. For regex matching, use `raw_pattern`.
+
 **Flag-value pair:** `-d recurse` is a flag with a value argument. `flags_any: ["-d"]` fires on any `-d` value. Correct form: `flags_any: ["-d"]` + `args_any: ["recurse"]` with `all_match: true` on the pattern.
 
 Use `raw_pattern` sparingly — only for subshell detection (`\$\(`, backticks), line-continuation sequences, or patterns not expressible via flag/arg fields.
@@ -79,7 +83,7 @@ Use `raw_pattern` sparingly — only for subshell detection (`\$\(`, backticks),
 ### Rule Coverage
 
 - Every flag or combination that meaningfully changes the risk profile needs its own rule
-- Combinations that together produce a risk not present in either flag alone need a dedicated rule with `all_match: true` on the rule
+- Combinations that together produce a risk not present in either flag alone need a dedicated rule. Use `flags_all` within a pattern to require multiple flags to be co-present. Do not confuse this with `all_match: true` on the rule — that requires ALL patterns in the rule to fire simultaneously, which is rarely correct. A rule with multiple patterns (e.g. one for `-r -A`, one for `-r -B`, one for `-r -C`) should leave `all_match` at its default false, so any one pattern match fires the rule. Reserve `all_match: true` for the unusual case where two independent patterns must both fire at the same time.
 - Include standalone rules for each flag that also appears in combination rules
 - Do not conflate flags with different risk profiles into one rule (e.g. `-exec {} \;` and `-exec {} +` behave differently at scale)
 

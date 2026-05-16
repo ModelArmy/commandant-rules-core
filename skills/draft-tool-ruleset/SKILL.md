@@ -41,7 +41,7 @@ For each flag or combination, ask:
 - Does this invoke another binary or spawn a subshell?
 - Does this escalate privilege or modify environment?
 
-Every flag or combination that meaningfully changes the risk profile needs its own rule. Combinations that together produce a risk not present in either flag alone need a dedicated rule with `all_match: true`.
+Every flag or combination that meaningfully changes the risk profile needs its own rule. Combinations that together produce a risk not present in either flag alone need a dedicated rule — use `flags_all` within a pattern to require multiple flags to be co-present. `all_match: true` on the rule is different: it requires ALL patterns in the rule to fire simultaneously. This is rarely correct — use it only when the rule genuinely needs two independent patterns to both match at the same time. When a rule has multiple patterns each encoding a flag combination via `flags_all`, leave `all_match` at its default (false) so any one pattern fires the rule.
 
 ### Step 3 — Populate both `pattern` and `match`
 
@@ -63,6 +63,8 @@ These serve different phases:
 | `args_any` | Fires if any of these values appear in arguments |
 | `args_none` | Fires only if NONE of these values appear |
 | `raw_pattern` | Regex on raw string — use only when flag/arg matching is insufficient |
+
+All values in `flags_any`, `flags_all`, `args_any`, and `args_none` are matched as **exact strings — not regex**. For regex matching against the raw command string, use `raw_pattern`.
 
 **Flag-value pair trap:** `-d recurse` cannot be matched with `flags_any: ["-d"]` alone — that fires on `-d skip` too. Use `flags_any: ["-d"]` + `args_any: ["recurse"]` with `all_match: true`.
 
