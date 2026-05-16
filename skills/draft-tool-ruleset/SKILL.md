@@ -104,6 +104,17 @@ Covers the tool when invoked with no risky flags. Lowest-risk baseline state of 
 
 ---
 
+### Step 8 — Self-review before output
+
+Before producing the final JSON, verify:
+
+- [ ] **`likely_consequences` direct-cause test**: for each tag, does this rule's matched command directly cause this outcome — or does it only make a harmful outcome easier for a subsequent action? If a separate actor, decision, or tool is required, remove the tag and add a caveat to `notes` instead.
+- [ ] **Severity consistency within groups**: find rules that share the same base operation with different output modifiers (e.g. recursive search + count vs. recursive search + filename-only). Are severity levels consistent across the group? If not, is the difference justified and recorded in `notes`?
+- [ ] **`reversible: "depends"` check**: does a write actually occur conditionally, or is this read-only with variable output content? If the latter, change to `"yes"`.
+- [ ] **Exact strings in `match` fields**: do any values in `flags_any`, `flags_all`, `args_any`, or `args_none` contain regex syntax? If so, move the regex to `raw_pattern` and replace the match field value with the exact string a parser would produce.
+
+---
+
 ## Repository Placement
 
 ```

@@ -10,8 +10,7 @@ Your response must conform to the provided JSON schema, which is enforced by the
 
 Apply only these values, exactly as spelled:
 
-| Category               | Meaning                                                |
-|------------------------|--------------------------------------------------------|
+| Category               | Meaning                                                |--|
 | `reads-files`          | Accesses file content from the filesystem              |
 | `writes-files`         | Modifies or creates files                              |
 | `deletes-files`        | Removes files or directories                           |
@@ -27,8 +26,7 @@ Apply only these values, exactly as spelled:
 
 Include `likely_consequences` only where the risk is concrete and direct:
 
-| Consequence                    | Meaning                                        |
-|--------------------------------|------------------------------------------------|
+| Consequence                    | Meaning                                        |-|
 | `data-loss`                    | Files permanently destroyed                    |
 | `data-corruption`              | Files modified in a damaging or unintended way |
 | `privacy-breach`               | Private or sensitive content exposed           |
@@ -40,20 +38,22 @@ Include `likely_consequences` only where the risk is concrete and direct:
 
 `data-loss` means files are permanently destroyed. It requires `writes-files`, `deletes-files`, or `irreversible` in `risk_tags`. Do not apply it to read-only operations — reading sensitive content is `privacy-breach`, not `data-loss`.
 
+Before adding any consequence tag, apply this test: does this flag or combination directly cause this outcome, or does it only make a harmful outcome easier for a subsequent action? If a separate actor, decision, or tool is required for the consequence to materialise, the tag does not belong in `likely_consequences` — put the caveat in `notes` instead.
+
 ### Severity Calibration
 
-| Severity  | When                                                              |
-|-----------|-------------------------------------------------------------------|
+| Severity  | When                                                              |--|
 | `ERROR`   | Destructive, irreversible, or arbitrary code execution            |
 | `WARNING` | Concrete, direct threat vector — not merely "more output"         |
 | `INFO`    | Changes output format or verbosity without expanding access scope |
 
 A WARNING requires a concrete threat vector. Flags that change output verbosity or format without expanding which files are accessed are INFO, not WARNING.
 
+After drafting all rules, scan for groups of rules that share the same base operation (e.g. recursive search) with different output modifiers (count, filename-only, suppressed output). Assign consistent severity within the group unless there is a specific, articulable reason one modifier meaningfully changes the risk profile relative to its peers. If severities differ within a group, record the justification in `notes`.
+
 ### Reversibility
 
-| Value     | When                                                           |
-|-----------|----------------------------------------------------------------|
+| Value     | When                                                           |--|
 | `yes`     | Files are not modified — even if sensitive content is revealed |
 | `no`      | Effect cannot be undone without a backup                       |
 | `depends` | Whether a write occurs depends on argument content             |
@@ -107,27 +107,6 @@ For `cat`, `ls`, `find`, `grep`, `sed`, `awk`, `curl`, `git` — `high` is expec
 ### Multiplexer Tools
 
 If the tool dispatches to subcommands (busybox, toybox): set `is_multiplexer: true`. The ruleset covers dispatch behavior only — each subcommand needs its own ruleset.
-
----
-
-## User Prompt Template
-
-```
-Analyze the following shell tool and generate a risk ruleset.
-
-Tool: {{tool_name}}
-Platform: {{linux|macos|windows|posix}}
-```
-
-For obscure or domain-specific tools:
-
-```
-Tool: {{tool_name}}
-Platform: {{platform}}
-Description: {{one_sentence_description}}
-```
-
----
 
 ## Example Output: `sed` (linux)
 
@@ -238,10 +217,7 @@ Calibration reference. Note:
 }
 ```
 
----
-
 ## Notes on Use
 
 - The prompt omits sandbox constraints and policy — these are runtime concerns and must not influence the ruleset
 - Run the same prompt against multiple models and union results; divergence between models signals human review
-- For `cat`, `ls`, `find`, `grep`, `sed`: `llm_confidence: "high"` is expected from any capable model
