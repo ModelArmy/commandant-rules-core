@@ -10,7 +10,8 @@ Your response must conform to the provided JSON schema, which is enforced by the
 
 Apply only these values, exactly as spelled:
 
-| Category               | Meaning                                                |--|
+| Category               | Meaning                                                |
+|------------------------|--------------------------------------------------------|
 | `reads-files`          | Accesses file content from the filesystem              |
 | `writes-files`         | Modifies or creates files                              |
 | `deletes-files`        | Removes files or directories                           |
@@ -26,7 +27,8 @@ Apply only these values, exactly as spelled:
 
 Include `likely_consequences` only where the risk is concrete and direct:
 
-| Consequence                    | Meaning                                        |-|
+| Consequence                    | Meaning                                        |
+|--------------------------------|------------------------------------------------|
 | `data-loss`                    | Files permanently destroyed                    |
 | `data-corruption`              | Files modified in a damaging or unintended way |
 | `privacy-breach`               | Private or sensitive content exposed           |
@@ -42,7 +44,8 @@ Before adding any consequence tag, apply this test: does this flag or combinatio
 
 ### Severity Calibration
 
-| Severity  | When                                                              |--|
+| Severity  | When                                                              |
+|-----------|-------------------------------------------------------------------|
 | `ERROR`   | Destructive, irreversible, or arbitrary code execution            |
 | `WARNING` | Concrete, direct threat vector — not merely "more output"         |
 | `INFO`    | Changes output format or verbosity without expanding access scope |
@@ -53,7 +56,8 @@ After drafting all rules, scan for groups of rules that share the same base oper
 
 ### Reversibility
 
-| Value     | When                                                           |--|
+| Value     | When                                                           |
+|-----------|----------------------------------------------------------------|
 | `yes`     | Files are not modified — even if sensitive content is revealed |
 | `no`      | Effect cannot be undone without a backup                       |
 | `depends` | Whether a write occurs depends on argument content             |
@@ -66,6 +70,15 @@ Every pattern requires both `pattern` and `match`:
 
 - `pattern` — Semgrep syntax for offline verification. Use `...` as wildcard, not regex. `grep -r ...` not `(grep)(.*\s)?(-r)`.
 - `match` — structured object for runtime evaluation. At least one field must be populated.
+
+Select `pattern_type` by what the pattern actually matches:
+- `flag` — a standalone flag with no required value (`-R`, `--recursive`)
+- `argument` — a positional argument or flag value (`-`, `/dev/sda`, `read`)
+- `flag-argument-combination` — a flag that requires or changes meaning with a specific value (`-d recurse`, `--devices=read`)
+- `subshell` — a `$()` or backtick expression inside the command
+- `pipe` — a shell operator or redirection (`>`, `>>`, `|`) that is not a flag on the tool itself
+
+Do not use `flag` for shell-level constructs. Redirection operators (`>`, `>>`) and pipes are `pipe`. Positional arguments like `-` (stdin) are `argument`.
 
 `match` field semantics:
 - `flags_any` — fires if any of these flags are present
@@ -86,6 +99,7 @@ Use `raw_pattern` sparingly — only for subshell detection (`\$\(`, backticks),
 - Combinations that together produce a risk not present in either flag alone need a dedicated rule. Use `flags_all` within a pattern to require multiple flags to be co-present. Do not confuse this with `all_match: true` on the rule — that requires ALL patterns in the rule to fire simultaneously, which is rarely correct. A rule with multiple patterns (e.g. one for `-r -A`, one for `-r -B`, one for `-r -C`) should leave `all_match` at its default false, so any one pattern match fires the rule. Reserve `all_match: true` for the unusual case where two independent patterns must both fire at the same time.
 - Include standalone rules for each flag that also appears in combination rules
 - Do not conflate flags with different risk profiles into one rule (e.g. `-exec {} \;` and `-exec {} +` behave differently at scale)
+- When the same flag produces outcomes with materially different severity depending on an argument — one destructive, one recoverable — they must be separate rules. Use `args_any` or `args_none` to distinguish them. A `reversible: "depends"` rule that obscures an `ERROR`-severity case is a calibration error, not a valid use of `"depends"`. See `sed-inplace-no-backup` vs `sed-inplace-with-backup` in the example output.
 
 ### Platform
 
@@ -95,6 +109,8 @@ Use `raw_pattern` sparingly — only for subshell detection (`\$\(`, backticks),
 - `posix` — valid for both linux and macos with no caveats
 
 `platform_notes` should describe meaningful behavioural differences on other platforms and whether a sibling ruleset is needed. Be specific — note flag name differences, argument syntax differences, and flags that don't exist on the sibling platform.
+
+A `posix` ruleset must contain only flags and behaviors valid on both GNU and BSD implementations without caveats. Flags that exist only on one platform belong in a platform-specific ruleset or in `unknown_flags`, not in rules. If you find yourself including a GNU-only or BSD-only flag in a `posix` ruleset, change `platform` to the specific platform or split the ruleset.
 
 ### Confidence
 

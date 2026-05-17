@@ -112,6 +112,8 @@ Before producing the final JSON, verify:
 - [ ] **Severity consistency within groups**: find rules that share the same base operation with different output modifiers (e.g. recursive search + count vs. recursive search + filename-only). Are severity levels consistent across the group? If not, is the difference justified and recorded in `notes`?
 - [ ] **`reversible: "depends"` check**: does a write actually occur conditionally, or is this read-only with variable output content? If the latter, change to `"yes"`.
 - [ ] **Exact strings in `match` fields**: do any values in `flags_any`, `flags_all`, `args_any`, or `args_none` contain regex syntax? If so, move the regex to `raw_pattern` and replace the match field value with the exact string a parser would produce.
+- [ ] **`pattern_type` accuracy**: do any patterns use `flag` for a shell operator (redirection, pipe) or positional argument? Shell operators are `pipe`; positional arguments like `-` are `argument`.
+- [ ] **Platform scope of rules**: if `platform` is `posix`, do any rules reference flags that are GNU-only or BSD-only? If so, either restrict the platform field or move those flags to `unknown_flags`.
 
 ---
 
