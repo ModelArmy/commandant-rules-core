@@ -2,175 +2,123 @@
     "tool": "cat",
     "tool_summary": "Display file contents or concatenate files to standard output.",
     "platform": "posix",
-    "platform_notes": "POSIX cat is straightforward. GNU coreutils adds --files0-from, --ignore-dup-separator, --null, --output-delimiter, and extended long-option abbreviation support that are not POSIX-compliant. On macOS (BSD cat), behavior is identical to POSIX for all core flags.",
+    "platform_notes": "POSIX cat is straightforward and well-standardized. GNU coreutils adds GNU-only flags (--chdir, --files0-from, --null/-z, --output-delimiter, --ignore-dup-separator) and GNU long-option abbreviations (e.g. --number-all, --squeeze-blank) that are not POSIX and not available on macOS (BSD cat).",
     "llm_confidence": "high",
     "unknown_flags": [
-      "--files0-from",
-      "--ignore-dup-separator"
+        "--chdir",
+        "--files0-from",
+        "--ignore-dup-separator",
+        "--null",
+        "--output-delimiter"
     ],
     "is_multiplexer": false,
     "option_abbreviations": {
-      "--num": "--number-all",
-      "--num-nonblank": "--number-nonblank",
-      "--squee": "--squeeze-blank",
-      "--show-e": "--show-ends",
-      "--show-t": "--show-tabs",
-      "--show-n": "--show-nonprinting"
+        "--num": "--number-all",
+        "--num-nonblank": "--number-nonblank",
+        "--squee": "--squeeze-blank",
+        "--show-e": "--show-ends",
+        "--show-t": "--show-tabs",
+        "--show-n": "--show-nonprinting"
     },
     "rules": [
-      {
-        "id": "cat-format-flags",
-        "description": "Format and display flags alter how output is rendered (line numbering, blank line squeezing, output delimiters, tab/nonprinting markers) but do not expand access scope, change data flow direction, or introduce additional file access. These flags only affect output presentation.",
-        "patterns": [
-          {
-            "pattern": "cat -n $X",
-            "pattern_type": "flag",
-            "example": "cat -n config.txt",
-            "match": {
-              "flags_any": [
-                "-n",
-                "--number-all"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -b $X",
-            "pattern_type": "flag",
-            "example": "cat -b file.txt",
-            "match": {
-              "flags_any": [
-                "-b",
-                "--number-nonblank"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -E $X",
-            "pattern_type": "flag",
-            "example": "cat -E file.txt",
-            "match": {
-              "flags_any": [
-                "-E",
-                "--show-ends"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -T $X",
-            "pattern_type": "flag",
-            "example": "cat -T file.txt",
-            "match": {
-              "flags_any": [
-                "-T",
-                "--show-tabs"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -v $X",
-            "pattern_type": "flag",
-            "example": "cat -v file.txt",
-            "match": {
-              "flags_any": [
-                "-v",
-                "--show-nonprinting"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -s $X",
-            "pattern_type": "flag",
-            "example": "cat -s file.txt",
-            "match": {
-              "flags_any": [
-                "-s",
-                "--squeeze-blank"
-              ]
-            }
-          },
-          {
-            "pattern": "cat -z $X",
-            "pattern_type": "flag",
-            "example": "cat -z file.txt",
-            "match": {
-              "flags_any": [
-                "-z",
-                "--null"
-              ]
-            }
-          },
-          {
-            "pattern": "cat --output-delimiter=$X",
-            "pattern_type": "flag",
-            "example": "cat --output-delimiter='|' file1.txt file2.txt",
-            "match": {
-              "flags_any": [
-                "--output-delimiter"
-              ]
-            }
-          }
-        ],
-        "risk_tags": [
-          "reads-files"
-        ],
-        "reversible": "yes",
-        "severity": "INFO",
-        "likely_consequences": []
-      },
-      {
-        "id": "cat-output-redirection",
-        "description": "Shell output redirection causes cat to create or modify files. Overwriting via > truncates existing content (data-loss risk). Appending via >> may corrupt data that relies on exact file structure. Severity is WARNING because the actual impact depends on the target file and its contents.",
-        "patterns": [
-          {
-            "pattern": "cat > $X",
-            "pattern_type": "flag",
-            "example": "cat > outfile.txt",
-            "match": {
-              "raw_pattern": "cat\\s*>\\s"
-            }
-          },
-          {
-            "pattern": "cat $F > $X",
-            "pattern_type": "flag",
-            "example": "cat infile.txt > outfile.txt",
-            "match": {
-              "raw_pattern": "cat\\s+\\S+\\s*>\\s"
-            }
-          },
-          {
-            "pattern": "cat $F >> $X",
-            "pattern_type": "flag",
-            "example": "cat logfile.txt >> archive.txt",
-            "match": {
-              "raw_pattern": "cat\\s+\\S+\\s*>>\\s"
-            }
-          },
-          {
-            "pattern": "cat >> $X",
-            "pattern_type": "flag",
-            "example": "cat >> logfile.txt",
-            "match": {
-              "raw_pattern": "cat\\s*>>\\s"
-            }
-          }
-        ],
-        "risk_tags": [
-          "writes-files"
-        ],
-        "reversible": "depends",
-        "reversible_note": "Overwriting via > truncates existing file content; irreversible without a backup. Appending via >> preserves existing content but may corrupt data that relies on exact structure or byte-level integrity.",
-        "severity": "WARNING",
-        "likely_consequences": [
-          "data-loss",
-          "data-corruption"
-        ]
-      }
+        {
+            "id": "cat-output-redirection",
+            "description": "Shell output redirection causes cat's output to be written to a file. Overwriting via > truncates existing content (data-loss risk). Appending via >> may corrupt data that relies on exact file structure.",
+            "patterns": [
+                {
+                    "pattern": "cat > ...",
+                    "pattern_type": "pipe",
+                    "example": "cat > outfile.txt",
+                    "match": {
+                        "raw_pattern": "cat\\s+>\\s*"
+                    }
+                },
+                {
+                    "pattern": "cat ... > ...",
+                    "pattern_type": "pipe",
+                    "example": "cat infile.txt > outfile.txt",
+                    "match": {
+                        "raw_pattern": "cat\\s+\\S+\\s*>\\s*"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "writes-files",
+                "irreversible"
+            ],
+            "reversible": "no",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "data-loss",
+                "data-corruption"
+            ]
+        },
+        {
+            "id": "cat-format-flags",
+            "description": "POSIX-compliant format and display flags alter how output is rendered (line numbering, nonblank numbering, blank line squeezing, tab/nonprinting markers) but do not expand access scope or change data flow direction. These flags only affect output presentation.",
+            "patterns": [
+                {
+                    "pattern": "cat -n ...",
+                    "pattern_type": "flag",
+                    "example": "cat -n config.txt",
+                    "match": {
+                        "flags_any": ["-n"]
+                    }
+                },
+                {
+                    "pattern": "cat -b ...",
+                    "pattern_type": "flag",
+                    "example": "cat -b file.txt",
+                    "match": {
+                        "flags_any": ["-b"]
+                    }
+                },
+                {
+                    "pattern": "cat -E ...",
+                    "pattern_type": "flag",
+                    "example": "cat -E file.txt",
+                    "match": {
+                        "flags_any": ["-E"]
+                    }
+                },
+                {
+                    "pattern": "cat -T ...",
+                    "pattern_type": "flag",
+                    "example": "cat -T file.txt",
+                    "match": {
+                        "flags_any": ["-T"]
+                    }
+                },
+                {
+                    "pattern": "cat -v ...",
+                    "pattern_type": "flag",
+                    "example": "cat -v file.txt",
+                    "match": {
+                        "flags_any": ["-v"]
+                    }
+                },
+                {
+                    "pattern": "cat -s ...",
+                    "pattern_type": "flag",
+                    "example": "cat -s file.txt",
+                    "match": {
+                        "flags_any": ["-s"]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files"
+            ],
+            "reversible": "yes",
+            "severity": "INFO",
+            "likely_consequences": []
+        }
     ],
     "default_rule": {
-      "risk_tags": [
-        "reads-files"
-      ],
-      "reversible": "yes",
-      "severity": "INFO"
+        "risk_tags": [
+            "reads-files"
+        ],
+        "reversible": "yes",
+        "severity": "INFO"
     }
 }

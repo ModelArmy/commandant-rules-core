@@ -1,277 +1,286 @@
 {
-     "tool": "ls",
-     "tool_summary": "Lists directory contents with optional metadata, recursion, and symlink dereferencing.",
-     "platform": "posix",
-     "platform_notes": "Core flag semantics are largely consistent between GNU ls and BSD ls. Extended flags like --color and --quoting-style differ but carry no additional risk. No separate ruleset needed for either platform.",
-     "llm_confidence": "high",
-     "unknown_flags": [],
-     "is_multiplexer": false,
-     "option_abbreviations": {},
-     "rules": [
-         {
-             "id": "ls-recursive-dereference",
-             "description": "Recursively follows symlinks, traversing into directories and exposing contents outside the original invocation scope. A symlink placed in a recursive tree can redirect into /etc, /var, /root, or other protected locations, reading metadata and traversing into paths the operator did not directly intend to visit.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -R ... -L ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -R -L /data",
-                     "match": {
-                         "flags_all": [
-                             "-R",
-                             "-L"
-                         ]
-                     }
-                 },
-                 {
-                     "pattern": "ls ... -L ... -R ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -L -R /data",
-                     "match": {
-                         "flags_all": [
-                             "-R",
-                             "-L"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files",
-                 "recursive"
-             ],
-             "reversible": "yes",
-             "severity": "WARNING",
-             "likely_consequences": [
-                 "privacy-breach"
-             ],
-             "notes": "This is the worst-case read expansion: recursive traversal combined with symlink following can expose file structure and metadata across a wide area. Higher priority than ls-recursive or ls-dereference individually."
-         },
-         {
-             "id": "ls-recursive-all",
-             "description": "Recursively lists all files including hidden ones (-R -a). This expands read scope beyond the invocation directory to the entire tree, including dotfiles with credentials and secrets that normal listings intentionally hide.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -R ... -a ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -Ra /home",
-                     "match": {
-                         "flags_all": [
-                             "-R",
-                             "-a"
-                         ]
-                     }
-                 },
-                 {
-                     "pattern": "ls ... -a ... -R ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -aR /home",
-                     "match": {
-                         "flags_all": [
-                             "-R",
-                             "-a"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files",
-                 "recursive"
-             ],
-             "reversible": "yes",
-             "severity": "WARNING",
-             "likely_consequences": [
-                 "privacy-breach"
-             ]
-         },
-         {
-             "id": "ls-recursive",
-             "description": "Recursively lists all files and subdirectories within the target path and its descendants. Expands read scope far beyond the invocation directory, exposing file structure and names that may include sensitive information across the entire tree.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -R ...",
-                     "pattern_type": "flag",
-                     "example": "ls -R /etc",
-                     "match": {
-                         "flags_any": [
-                             "-R",
-                             "--recursive"
-                         ]
-                     }
-                 },
-                 {
-                     "pattern": "ls ... --recursive ...",
-                     "pattern_type": "flag",
-                     "example": "ls --recursive ~/private",
-                     "match": {
-                         "flags_any": [
-                             "-R",
-                             "--recursive"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files",
-                 "recursive"
-             ],
-             "reversible": "yes",
-             "severity": "WARNING",
-             "likely_consequences": [
-                 "privacy-breach"
-             ]
-         },
-         {
-             "id": "ls-dereference",
-             "description": "Follows symlinks and displays metadata of the symlink target rather than the link itself. Symlinks placed in the target directory can redirect into protected filesystem locations (e.g. /etc, /var, /root), exposing metadata and access to files outside the intended scope.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -L ...",
-                     "pattern_type": "flag",
-                     "example": "ls -L /shared",
-                     "match": {
-                         "flags_any": [
-                             "-L",
-                             "--dereference"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files"
-             ],
-             "reversible": "yes",
-             "severity": "WARNING",
-             "likely_consequences": [],
-             "notes": "Lower severity than ls-recursive-dereference since it does not traverse subdirectories. Risk is limited to symlinks directly placed in the target directory. Does not expand file access scope beyond permission constraints."
-         },
-         {
-             "id": "ls-long",
-             "description": "Long format (-l) reveals detailed metadata: permissions, ownership, timestamps, and file sizes. This metadata can reveal system structure, user accounts, and permission configurations that aid in reconnaissance.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -l ...",
-                     "pattern_type": "flag",
-                     "example": "ls -l /etc",
-                     "match": {
-                         "flags_any": [
-                             "-l",
-                             "--long"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files"
-             ],
-             "reversible": "yes",
-             "severity": "INFO",
-             "likely_consequences": [
-                 "privacy-breach"
-             ],
-             "notes": "Output format change; does not expand file access scope beyond what the user can already read."
-         },
-         {
-             "id": "ls-long-context",
-             "description": "Long listing (-l) combined with SELinux security context (-Z) shows both detailed file attributes and security labels simultaneously. Both are output format changes that reveal more metadata but do not expand file access scope.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -l ... -Z ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -lZ /etc",
-                     "match": {
-                         "flags_all": [
-                             "-l",
-                             "-Z"
-                         ]
-                     }
-                 },
-                 {
-                     "pattern": "ls ... -Z ... -l ...",
-                     "pattern_type": "flag-argument-combination",
-                     "example": "ls -Zl /etc",
-                     "match": {
-                         "flags_all": [
-                             "-l",
-                             "-Z"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files"
-             ],
-             "reversible": "yes",
-             "severity": "INFO",
-             "likely_consequences": [],
-             "notes": "Output format change only; does not expand file access scope or reveal file content."
-         },
-         {
-             "id": "ls-all",
-             "description": "Lists hidden files and directories (dotfiles). These often contain sensitive configuration data or credentials, such as .env files, .ssh keys, .gnupg secrets, and .config settings that normal listings intentionally hide. Expands read scope beyond normal directory listing by exposing previously concealed entries.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -a ...",
-                     "pattern_type": "flag",
-                     "example": "ls -a /home/user",
-                     "match": {
-                         "flags_any": [
-                             "-a",
-                             "--all"
-                         ]
-                     }
-                 },
-                 {
-                     "pattern": "ls ... -A ...",
-                     "pattern_type": "flag",
-                     "example": "ls -A ~/private",
-                     "match": {
-                         "flags_any": [
-                             "-A",
-                             "--almost-all"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files"
-             ],
-             "reversible": "yes",
-             "severity": "INFO",
-             "likely_consequences": [
-                 "privacy-breach"
-             ],
-             "notes": "Reveals hidden files without expanding file access scope beyond normal directory listing permissions."
-         },
-         {
-             "id": "ls-security-context",
-             "description": "Displays SELinux security context (user:role:type:level) for each file. Exposes security policy details that could reveal the security model, label granularity, or identify files with weaker security contexts.",
-             "patterns": [
-                 {
-                     "pattern": "ls ... -Z ...",
-                     "pattern_type": "flag",
-                     "example": "ls -Z /etc",
-                     "match": {
-                         "flags_any": [
-                             "-Z",
-                             "--context"
-                         ]
-                     }
-                 }
-             ],
-             "risk_tags": [
-                 "reads-files"
-             ],
-             "reversible": "yes",
-             "severity": "INFO",
-             "likely_consequences": [],
-             "notes": "Output format change only; does not expand file access scope. computer-security-compromise moved to notes: ls does not directly compromise security, the information could be used in a subsequent attack."
-         }
-     ],
-     "default_rule": {
-         "risk_tags": [
-             "reads-files"
-         ],
-         "reversible": "yes",
-         "severity": "INFO"
-     }
+  "tool": "ls",
+  "tool_summary": "Lists directory contents with optional metadata, recursion, and symlink dereferencing.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics are largely consistent between GNU ls and BSD ls. Extended flags like --color and --quoting-style differ but carry no additional risk. No separate ruleset needed for either platform.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "ls-recursive-dereference",
+      "description": "Recursively follows symlinks, traversing into directories and exposing contents outside the original invocation scope. A symlink placed in a recursive tree can redirect into /etc, /var, /root, or other protected locations, reading metadata and traversing into paths the operator did not directly intend to visit.",
+      "patterns": [
+        {
+          "pattern": "ls ... -R ... -L ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -R -L /home/user",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-L"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... -L ... -R ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -L -R /home/user",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-L"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "all_match": false,
+      "notes": "Worst-case read expansion: recursive traversal combined with symlink following can expose file structure and metadata across a wide area. Higher priority than ls-recursive or ls-dereference individually."
+    },
+    {
+      "id": "ls-recursive-all",
+      "description": "Recursively lists all files including hidden ones (-R -a). This expands read scope beyond the invocation directory to the entire tree, including dotfiles with credentials and secrets that normal listings intentionally hide.",
+      "patterns": [
+        {
+          "pattern": "ls ... -R ... -a ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -Ra /home",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-a"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... -a ... -R ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -aR /home",
+          "match": {
+            "flags_all": [
+              "-R",
+              "-a"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "all_match": false
+    },
+    {
+      "id": "ls-recursive",
+      "description": "Recursively lists all files and subdirectories within the target path and its descendants. Expands read scope from a single directory to the entire tree, exposing file structure and names across descendant paths.",
+      "patterns": [
+        {
+          "pattern": "ls ... -R ...",
+          "pattern_type": "flag",
+          "example": "ls -R /home",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... --recursive ...",
+          "pattern_type": "flag",
+          "example": "ls --recursive ~/private",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "all_match": false,
+      "notes": "Expands the scope of file read operations from the invocation directory to all descendant paths. Combined with -L, see ls-recursive-dereference."
+    },
+    {
+      "id": "ls-dereference",
+      "description": "Follows symlinks and displays metadata of the symlink target rather than the link itself. Symlinks placed in the target directory can redirect into protected filesystem locations, exposing metadata about files outside the intended scope.",
+      "patterns": [
+        {
+          "pattern": "ls ... -L ...",
+          "pattern_type": "flag",
+          "example": "ls -L /shared",
+          "match": {
+            "flags_any": [
+              "-L",
+              "--dereference"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "all_match": false,
+      "notes": "Information exposure only - does not expand file access scope beyond permission constraints. Combined with -R, see ls-recursive-dereference."
+    },
+    {
+      "id": "ls-long",
+      "description": "Long format reveals detailed metadata: permissions, ownership, timestamps, and file sizes. This metadata reveals system structure, user accounts, and permission configurations that aid reconnaissance.",
+      "patterns": [
+        {
+          "pattern": "ls ... -l ...",
+          "pattern_type": "flag",
+          "example": "ls -l /home/user",
+          "match": {
+            "flags_any": [
+              "-l",
+              "--long"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "all_match": false,
+      "notes": "Output format change - does not expand file access scope beyond what the user can already read. Combined with -Z, see ls-long-context."
+    },
+    {
+      "id": "ls-long-context",
+      "description": "Long listing combined with SELinux security context shows both detailed file attributes and security labels simultaneously. Reveals security policy details and label granularity.",
+      "patterns": [
+        {
+          "pattern": "ls ... -l ... -Z ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -lZ /etc",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-Z"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... -Z ... -l ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -Zl /etc",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-Z"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "all_match": false,
+      "notes": "Output format change only - does not expand file access scope. Combined with -R, adds metadata exposure to recursive traversal."
+    },
+    {
+      "id": "ls-all",
+      "description": "Lists hidden files and directories (dotfiles). These often contain sensitive configuration data or credentials such as .env files, .ssh key paths, .gnupg secrets, and .config settings that normal listings intentionally hide.",
+      "patterns": [
+        {
+          "pattern": "ls ... -a ...",
+          "pattern_type": "flag",
+          "example": "ls -a /home/user",
+          "match": {
+            "flags_any": [
+              "-a",
+              "--all"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... -A ...",
+          "pattern_type": "flag",
+          "example": "ls -A ~/private",
+          "match": {
+            "flags_any": [
+              "-A",
+              "--almost-all"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "all_match": false,
+      "notes": "Reveals hidden files without expanding file access scope beyond normal directory listing permissions. Combined with -R, see ls-recursive-all."
+    },
+    {
+      "id": "ls-security-context",
+      "description": "Displays SELinux security context (user:role:type:level) for each file. Exposes security policy details that could reveal the security model, label granularity, or identify files with weaker security contexts.",
+      "patterns": [
+        {
+          "pattern": "ls ... -Z ...",
+          "pattern_type": "flag",
+          "example": "ls -Z /etc",
+          "match": {
+            "flags_any": [
+              "-Z",
+              "--context"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "all_match": false,
+      "notes": "Output format change only - does not expand file access scope. Information could be used in a subsequent attack but ls does not directly compromise security. Combined with -l, see ls-long-context."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
 }
