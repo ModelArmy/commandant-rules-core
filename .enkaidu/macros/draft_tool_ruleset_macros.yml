@@ -3,8 +3,9 @@ draft_tool_ruleset.enter:
   queries:
     - /session push
     - |
-      Read the SKILL.md in ./skills/draft-tool-ruleset to understand what we are going to do.
-      Make sure to read any references and let me know when you're ready to start generating rulesets.
+      Read `./skills/draft-tool-ruleset/SKILL.md` to understand what we are going to do.
+      Read the files referenced by the skill.
+      Let me know when you're ready to start generating rulesets.
 
 draft_tool_ruleset.generate_for:
   description: |
@@ -14,15 +15,21 @@ draft_tool_ruleset.generate_for:
     - Does not support notes; use `!draft_tool_ruleset.generate` if notes needed.
   queries:
     - /session push
+    - /include response_json_schema ./skills/draft-tool-ruleset/resources/request_tool_risk_ruleset_schema.json
     - |
       Analyze the following shell tool and generate a risk ruleset.
 
       Tool: %{tool}
+
       Platform: %{platform}
 
       Respond with a JSON object conforming to the provided schema.
+      Additional guidance
+      - Severity WARNING requires a concrete, direct threat vector beyond "more information is revealed." Flags that change output format or verbosity without materially expanding access scope should be INFO unless combined with a flag that does.
+      - Must use SemGrep style patterns. Do not use regex or any other format.
+    - |
       Save the ruleset in `%{tool}.json` in the ./rulesets folder under the platform sub-folder.
-    - /prompt use draft_tool_ruleset.continue
+    - /prompt use draft_tool_ruleset.continue_conditionally
     - /session usage
     - /session pop
 
@@ -32,7 +39,20 @@ draft_tool_ruleset.generate:
     - Usage: `!draft_tool_ruleset.generate`
   queries:
     - /session push
+    - /include response_json_schema ./skills/draft-tool-ruleset/resources/request_tool_risk_ruleset_schema.json
     - /prompt use draft_tool_ruleset.generate
-    - /prompt use draft_tool_ruleset.continue
+    - /prompt use draft_tool_ruleset.continue_conditionally
+    - /session usage
+    - /session pop
+
+draft_tool_ruleset.review:
+  description: |
+    Review an existing tool risk ruleset JSON file for a tool and platform you will be prompted for.
+    - Usage: `!draft_tool_ruleset.review`
+  queries:
+    - /session push
+    - /include response_json_schema ./skills/draft-tool-ruleset/resources/request_tool_risk_ruleset_schema.json
+    - /prompt use draft_tool_ruleset.review
+    - /prompt use draft_tool_ruleset.continue_conditionally
     - /session usage
     - /session pop

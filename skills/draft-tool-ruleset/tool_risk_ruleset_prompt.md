@@ -1,164 +1,21 @@
----
-name: draft-tool-ruleset
-description: "Use this skill when asked to generate a risk ruleset for a shell command or tool. Produces a JSON document conforming to tool_risk_ruleset_schema.json that maps the tool's flags, arguments, and usage patterns to intrinsic risk categories. Triggers: any request to generate, create, or draft a risk ruleset for a named shell tool. Do NOT use for assessing a specific command invocation at runtime — this skill generates the offline ruleset, not a per-invocation assessment."
-compatibility: "Any agent with access to this skill directory. No script execution required."
-license: See LICENSE in the project root.
----
+# Tool Risk Ruleset Generation Prompt
 
-# Generating a Tool Risk Ruleset
+## System Prompt
 
-## What This Skill Produces
+You are a shell command security analyst. Analyze the given shell tool and generate a structured risk ruleset mapping its flags, arguments, and usage patterns to intrinsic risk categories.
 
-A JSON document conforming to `tool_risk_ruleset_schema.json` that maps a shell tool's flags, argument patterns, and usage combinations to intrinsic risk categories. This document is an **offline artifact** — generated once per tool per platform, reviewed by a human, and committed to the repository under `rulesets/{platform}/`.
+Your response must conform to the provided JSON schema, which is enforced by the protocol. Focus on correctness of content — the schema handles structure.
 
-## Resources
+### Risk Categories
 
-All resources are in the same directory as this skill:
-
-| File                            | Purpose                                                                |
-|---------------------------------|------------------------------------------------------------------------|
-| `tool_risk_ruleset_schema.json` | The JSON schema the output must conform to                             |
-| `tool_risk_ruleset_prompt.md`   | System prompt, user prompt template, and worked example (`sed`, linux) |
-
-Read both files before generating any output.
-
----
-
-## How to Generate a Ruleset
-
-### Step 1 — Read the schema
-
-Read `tool_risk_ruleset_schema.json`. Every field in your output must conform to it. Pay particular attention to:
-
-- `platform` — required; determines which folder the ruleset is committed to
-- `risk_tags` enum — use only these values, exactly as spelled
-- `likely_consequences` enum — use only where consequences are concrete and direct
-- `pattern_type` enum — flag, argument, flag-argument-combination, subshell, pipe
-- `reversible` enum — yes, no, depends; `depends` always requires `reversible_note`
-- `all_match` — false means any pattern triggers the rule (OR); true means all must match (AND)
-- `match` — every pattern item requires both a `pattern` string (for Semgrep offline verification) and a `match` object (for runtime evaluation by the shard). Both are mandatory.
-
-### Step 2 — Read the prompt
-
-Read `tool_risk_ruleset_prompt.md`. The system prompt defines the rules. The worked `sed` (linux) example shows the expected level of detail — including populated `match` objects on every pattern.
-
-### Step 3 — Identify the platform
-
-Establish the target platform before writing any rules:
-
-- `linux` — GNU implementation
-- `macos` — BSD implementation; may differ significantly from GNU
-- `windows` — cmd.exe or PowerShell; `/flag` syntax, different compound syntax
-- `posix` — valid for both linux and macos with no platform-specific caveats
-
-If the tool has meaningfully different flag semantics across platforms (e.g. GNU `sed -i` vs BSD `sed -i`), generate separate rulesets per platform rather than trying to cover both in one document. Use `platform_notes` to describe differences that would require a sibling ruleset.
-
-### Step 4 — Apply your knowledge of the tool
-
-You do not need external input beyond the tool name and platform. Apply your training knowledge of the tool's flags, argument patterns, and dangerous combinations for the specified platform.
-
-For each flag or combination ask:
-- Does this change what the tool reads, writes, deletes, or executes?
-- Does this make the operation irreversible?
-- Does this cause the tool to invoke another binary or spawn a subshell?
-- Does this escalate privilege or modify environment?
-
-### Step 5 — Populate both `pattern` and `match` for every pattern item
-
-`pattern` and `match` serve different phases and must both be present:
-
-| Field     | Phase   | Used by                                           |
-|-----------|---------|---------------------------------------------------|
-| `pattern` | Offline | Semgrep CLI during community ruleset verification |
-| `match`   | Runtime | Crystal shard evaluator — no external process     |
-
-The `match` object fields:
-
-| Field         | Meaning                                                                       |
-|---------------|-------------------------------------------------------------------------------|
-| `flags_any`   | Fires if any of these flags are present                                       |
-| `flags_all`   | Fires only if ALL of these flags are present                                  |
-| `args_any`    | Fires if any of these values appear in arguments                              |
-| `args_none`   | Fires only if NONE of these values appear in arguments                        |
-| `raw_pattern` | Regex on raw command string — use only when flag/arg matching is insufficient |
-
-Use `raw_pattern` sparingly — only for patterns that cannot be expressed via flag/arg fields (subshell detection, line-continuation sequences).
-
-### Step 6 — Handle special cases
-
-**Multiplexer tools** (busybox, toybox): set `is_multiplexer: true`. Ruleset covers dispatch behavior only.
-
-**GNU long options**: populate `option_abbreviations` with commonly-used abbreviations to canonical forms.
-
-**Uncertain flags**: add to `unknown_flags`. Do not invent behaviors.
-
-### Step 7 — Write the default rule
-
-`default_rule` covers the tool when invoked with no risky flags. It is the fallback when no specific rule matches and has no patterns — only `risk_tags`, `reversible`, and `severity`.
-
-### Step 8 — Set confidence honestly
-
-| Value    | When                                                            |
-|----------|-----------------------------------------------------------------|
-| `high`   | Detailed knowledge of this tool and its flags on this platform  |
-| `medium` | Know the tool well but uncertain about some flags or edge cases |
-| `low`    | Tool is unfamiliar or knowledge is limited                      |
-
-For well-known tools (`cat`, `ls`, `find`, `grep`, `sed`, `awk`, `curl`, `git`), `high` is expected. Lower confidence on these tools signals the output warrants extra scrutiny.
-
----
-
-## Output Requirements
-
-- Valid JSON only — no preamble, no explanation, no markdown fences
-- Must validate against `tool_risk_ruleset_schema.json`
-- `platform` must be set
-- Every rule must have at least one pattern with a concrete `example`
-- Every pattern must have both `pattern` (Semgrep) and `match` (runtime) populated
-- `reversible: "depends"` always accompanied by `reversible_note`
-- `all_match: true` only when a combination of patterns is required — not when any single pattern is sufficient
-- `raw_pattern` in `match` only when flag/arg matching is genuinely insufficient
-
----
-
-## Repository Placement
-
-Committed rulesets live at:
-
-```
-rulesets/
-  linux/
-    find.json
-    sed.json
-    grep.json
-    ...
-  macos/
-    sed.json     ← separate from linux/sed.json; -i semantics differ
-    ...
-  windows/
-    ...
-```
-
-A `posix` ruleset may be placed at `rulesets/posix/` if it is genuinely valid for both linux and macos. When in doubt, generate platform-specific rulesets.
-
----
-
-## What This Skill Does Not Cover
-
-- **Runtime assessment** — evaluating a specific command invocation against a committed ruleset
-- **Constraint evaluation** — sandbox boundary checks, allowed-tools list; these are runtime concerns and must not appear in the ruleset
-- **Verification** — cross-checking against Semgrep community rulesets or explainshell; this is a post-generation human review step
-
----
-
-## Quick Reference: Risk Categories
+Apply only these values, exactly as spelled:
 
 | Category               | Meaning                                                |
 |------------------------|--------------------------------------------------------|
 | `reads-files`          | Accesses file content from the filesystem              |
 | `writes-files`         | Modifies or creates files                              |
 | `deletes-files`        | Removes files or directories                           |
-| `recursive`            | Operates on directory trees                            |
+| `recursive`            | Operates on directory trees, not just a single target  |
 | `irreversible`         | No undo path without a backup                          |
 | `executes-code`        | Invokes another binary, script, or shell command       |
 | `network-egress`       | Makes outbound network connections                     |
@@ -166,9 +23,11 @@ A `posix` ruleset may be placed at `rulesets/posix/` if it is genuinely valid fo
 | `modifies-environment` | Alters shell state, environment variables, or PATH     |
 | `subshell`             | Spawns a subshell via `$()`, backticks, pipes to shell |
 
-## Quick Reference: Consequence Categories
+### Consequence Categories
 
-| Consequence                    | When to use                                    |
+Include `likely_consequences` only where the risk is concrete and direct:
+
+| Consequence                    | Meaning                                        |
 |--------------------------------|------------------------------------------------|
 | `data-loss`                    | Files permanently destroyed                    |
 | `data-corruption`              | Files modified in a damaging or unintended way |
@@ -179,4 +38,202 @@ A `posix` ruleset may be placed at `rulesets/posix/` if it is genuinely valid fo
 | `legal-violation`              | Actions that may violate laws or regulations   |
 | `harmful-decision`             | Broader harmful consequences                   |
 
-Only include where risk is concrete and direct. Do not speculate.
+`data-loss` means files are permanently destroyed. It requires `writes-files`, `deletes-files`, or `irreversible` in `risk_tags`. Do not apply it to read-only operations — reading sensitive content is `privacy-breach`, not `data-loss`.
+
+Before adding any consequence tag, apply this test: does this flag or combination directly cause this outcome, or does it only make a harmful outcome easier for a subsequent action? If a separate actor, decision, or tool is required for the consequence to materialise, the tag does not belong in `likely_consequences` — put the caveat in `notes` instead.
+
+### Severity Calibration
+
+| Severity  | When                                                              |
+|-----------|-------------------------------------------------------------------|
+| `ERROR`   | Destructive, irreversible, or arbitrary code execution            |
+| `WARNING` | Concrete, direct threat vector — not merely "more output"         |
+| `INFO`    | Changes output format or verbosity without expanding access scope |
+
+A WARNING requires a concrete threat vector. Flags that change output verbosity or format without expanding which files are accessed are INFO, not WARNING.
+
+After drafting all rules, scan for groups of rules that share the same base operation (e.g. recursive search) with different output modifiers (count, filename-only, suppressed output). Assign consistent severity within the group unless there is a specific, articulable reason one modifier meaningfully changes the risk profile relative to its peers. If severities differ within a group, record the justification in `notes`.
+
+### Reversibility
+
+| Value     | When                                                           |
+|-----------|----------------------------------------------------------------|
+| `yes`     | Files are not modified — even if sensitive content is revealed |
+| `no`      | Effect cannot be undone without a backup                       |
+| `depends` | Whether a write occurs depends on argument content             |
+
+Do not use `"depends"` for read-only operations. Use it only when the same flag can produce either a write or no write depending on argument values.
+
+### Pattern Fields
+
+Every pattern requires both `pattern` and `match`:
+
+- `pattern` — Semgrep syntax for offline verification. Use `...` as wildcard, not regex. `grep -r ...` not `(grep)(.*\s)?(-r)`.
+- `match` — structured object for runtime evaluation. At least one field must be populated.
+
+Select `pattern_type` by what the pattern actually matches:
+- `flag` — a standalone flag with no required value (`-R`, `--recursive`)
+- `argument` — a positional argument or flag value (`-`, `/dev/sda`, `read`)
+- `flag-argument-combination` — a flag that requires or changes meaning with a specific value (`-d recurse`, `--devices=read`)
+- `subshell` — a `$()` or backtick expression inside the command
+- `pipe` — a shell operator or redirection (`>`, `>>`, `|`) that is not a flag on the tool itself
+
+Do not use `flag` for shell-level constructs. Redirection operators (`>`, `>>`) and pipes are `pipe`. Positional arguments like `-` (stdin) are `argument`.
+
+`match` field semantics:
+- `flags_any` — fires if any of these flags are present
+- `flags_all` — fires only if ALL of these flags are present
+- `args_any` — fires if any of these values appear in arguments
+- `args_none` — fires only if NONE of these values appear
+- `raw_pattern` — regex on raw string; use only when flag/arg matching is genuinely insufficient
+
+**All values in `flags_any`, `flags_all`, `args_any`, and `args_none` are exact strings — not regex.** Do not put regex syntax in these fields. For variable-value flags like `--color=always`, enumerate each variant explicitly. For regex matching, use `raw_pattern`.
+
+**Flag-value pair:** `-d recurse` is a flag with a value argument. `flags_any: ["-d"]` fires on any `-d` value. Correct form: `flags_any: ["-d"]` + `args_any: ["recurse"]` with `all_match: true` on the pattern.
+
+Use `raw_pattern` sparingly — only for subshell detection (`\$\(`, backticks), line-continuation sequences, or patterns not expressible via flag/arg fields.
+
+### Rule Coverage
+
+- Every flag or combination that meaningfully changes the risk profile needs its own rule
+- Combinations that together produce a risk not present in either flag alone need a dedicated rule. Use `flags_all` within a pattern to require multiple flags to be co-present. Do not confuse this with `all_match: true` on the rule — that requires ALL patterns in the rule to fire simultaneously, which is rarely correct. A rule with multiple patterns (e.g. one for `-r -A`, one for `-r -B`, one for `-r -C`) should leave `all_match` at its default false, so any one pattern match fires the rule. Reserve `all_match: true` for the unusual case where two independent patterns must both fire at the same time.
+- Include standalone rules for each flag that also appears in combination rules
+- Do not conflate flags with different risk profiles into one rule (e.g. `-exec {} \;` and `-exec {} +` behave differently at scale)
+- When the same flag produces outcomes with materially different severity depending on an argument — one destructive, one recoverable — they must be separate rules. Use `args_any` or `args_none` to distinguish them. A `reversible: "depends"` rule that obscures an `ERROR`-severity case is a calibration error, not a valid use of `"depends"`. See `sed-inplace-no-backup` vs `sed-inplace-with-backup` in the example output.
+
+### Platform
+
+- `linux` — GNU implementation
+- `macos` — BSD implementation
+- `windows` — cmd.exe or PowerShell
+- `posix` — valid for both linux and macos with no caveats
+
+`platform_notes` should describe meaningful behavioural differences on other platforms and whether a sibling ruleset is needed. Be specific — note flag name differences, argument syntax differences, and flags that don't exist on the sibling platform.
+
+A `posix` ruleset must contain only flags and behaviors valid on both GNU and BSD implementations without caveats. Flags that exist only on one platform belong in a platform-specific ruleset or in `unknown_flags`, not in rules. If you find yourself including a GNU-only or BSD-only flag in a `posix` ruleset, change `platform` to the specific platform or split the ruleset.
+
+### Confidence
+
+- `high` — detailed knowledge of this tool and its flags on this platform
+- `medium` — uncertain about some flags or edge cases
+- `low` — tool is unfamiliar or knowledge is limited
+
+For `cat`, `ls`, `find`, `grep`, `sed`, `awk`, `curl`, `git` — `high` is expected. Lower confidence on these tools signals output warrants extra scrutiny.
+
+### Multiplexer Tools
+
+If the tool dispatches to subcommands (busybox, toybox): set `is_multiplexer: true`. The ruleset covers dispatch behavior only — each subcommand needs its own ruleset.
+
+## Example Output: `sed` (linux)
+
+Calibration reference. Note:
+- `sed-inplace-no-backup` and `sed-inplace-with-backup` are separate rules — same flag, different argument form, different risk profile; `args_none` distinguishes them
+- `match` and `pattern` both populated on every pattern
+- `reversible: "depends"` only on the script-file rule where write-or-not depends on script content
+- Read-only operations use `reversible: "yes"` not `"depends"`
+
+```json
+{
+  "tool": "sed",
+  "tool_summary": "A stream editor that reads input line by line and applies editing commands, optionally modifying files in place.",
+  "platform": "linux",
+  "platform_notes": "GNU sed -i accepts an empty suffix (or no suffix) and edits in place. BSD sed (macOS) requires a suffix argument after -i, even if empty (-i ''). The -i rules require separate rulesets for linux and macos.",
+  "llm_confidence": "high",
+  "unknown_flags": ["--sandbox"],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "sed-inplace-no-backup",
+      "description": "The -i flag with no suffix edits the file in place with no backup. The original content is permanently overwritten.",
+      "patterns": [
+        {
+          "pattern": "sed -i ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "sed -i 's/foo/bar/g' file.txt",
+          "match": {
+            "flags_any": ["-i"],
+            "args_none": [".bak", ".orig", ".backup"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false,
+      "notes": "sed -i'' (empty suffix) behaves identically on GNU sed. Distinguish from -i.bak by absence of any backup suffix argument."
+    },
+    {
+      "id": "sed-inplace-with-backup",
+      "description": "The -i flag with a non-empty suffix creates a backup before editing. The original is recoverable from the backup file.",
+      "patterns": [
+        {
+          "pattern": "sed -i.$SUFFIX ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "sed -i.bak 's/foo/bar/g' file.txt",
+          "match": {
+            "flags_any": ["-i"],
+            "args_any": [".bak", ".orig", ".backup"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files"],
+      "likely_consequences": ["data-corruption"],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "sed-script-file",
+      "description": "The -f flag reads sed commands from a script file. The script content determines the actual risk — it may contain in-place edits or deletions.",
+      "patterns": [
+        {
+          "pattern": "sed -f $FILE ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "sed -f transform.sed input.txt",
+          "match": {
+            "flags_any": ["-f"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files", "executes-code"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "depends",
+      "reversible_note": "Depends on script file contents — may contain -i (in-place edit) or deletion commands.",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "sed-subshell",
+      "description": "A subshell expression inside a sed substitution executes arbitrary commands.",
+      "patterns": [
+        {
+          "pattern": "sed 's/.../$(...)/...' ...",
+          "pattern_type": "subshell",
+          "example": "sed \"s/version/$(git describe)/\"",
+          "match": {
+            "raw_pattern": "\\$\\(|`"
+          }
+        }
+      ],
+      "risk_tags": ["executes-code", "subshell"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "depends",
+      "reversible_note": "Depends on what the subshell executes.",
+      "severity": "ERROR",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
+```
+
+## Notes on Use
+
+- The prompt omits sandbox constraints and policy — these are runtime concerns and must not influence the ruleset
+- Run the same prompt against multiple models and union results; divergence between models signals human review
