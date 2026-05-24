@@ -138,16 +138,53 @@
             ]
         },
         {
-            "id": "sed-I-in-place-editing",
-            "description": "Matches sed invoked with -I for in-place file editing. This is a BSD/macOS variant of -i that only edits files specified as arguments (not files read from stdin). On macOS, -I requires a backup suffix argument (even if empty), and the operation overwrites the original file regardless of whether a backup copy is created.",
+            "id": "sed-I-inplace-no-backup",
+            "description": "The -I flag with no suffix edits the file in place with no backup. The original content is permanently overwritten.",
             "patterns": [
                 {
-                    "pattern": "sed -I $X... ",
-                    "pattern_type": "flag",
-                    "example": "sed -I '' 's/foo/bar/g' file.txt",
+                    "pattern": "sed -I ...",
+                    "pattern_type": "flag-argument-combination",
+                    "example": "sed -I 's/foo/bar/g' file.txt",
                     "match": {
                         "flags_any": [
                             "-I"
+                        ],
+                        "args_none": [
+                            ".bak",
+                            ".orig",
+                            ".backup"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "writes-files",
+                "irreversible"
+            ],
+            "likely_consequences": [
+                "data-loss",
+                "data-corruption"
+            ],
+            "reversible": "no",
+            "severity": "ERROR",
+            "all_match": false
+        },
+        {
+            "id": "sed-I-inplace-with-backup",
+            "description": "The -I flag with a non-empty suffix creates a backup before editing. The original is recoverable from the backup file.",
+            "patterns": [
+                {
+                    "pattern": "sed -I.$SUFFIX ...",
+                    "pattern_type": "flag-argument-combination",
+                    "example": "sed -I.bak 's/foo/bar/g' file.txt",
+                    "match": {
+                        "flags_any": [
+                            "-I"
+                        ],
+                        "args_any": [
+                            ".bak",
+                            ".orig",
+                            ".backup"
                         ]
                     }
                 }
@@ -155,12 +192,13 @@
             "risk_tags": [
                 "writes-files"
             ],
-            "reversible": "depends",
-            "reversible_note": "Reversible only if a non-empty backup suffix was provided with -I. With an empty suffix (''), the original is overwritten with no backup to restore from.",
-            "severity": "WARNING",
             "likely_consequences": [
                 "data-corruption"
-            ]
+            ],
+            "reversible": "yes",
+            "severity": "WARNING",
+            "reversible_note": "Reversible only if a non-empty backup suffix was provided with -I. With an empty suffix (''), the original is overwritten with no backup to restore from.",
+            "all_match": false
         },
         {
             "id": "sed-write-to-arbitrary-file",
