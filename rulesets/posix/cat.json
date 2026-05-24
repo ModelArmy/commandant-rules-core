@@ -22,15 +22,15 @@
     },
     "rules": [
         {
-            "id": "cat-output-redirection",
-            "description": "Shell output redirection causes cat's output to be written to a file. Overwriting via > truncates existing content (data-loss risk). Appending via >> may corrupt data that relies on exact file structure.",
+            "id": "cat-output-overwrite",
+            "description": "Shell output redirection with > truncates the target file, permanently overwriting its content.",
             "patterns": [
                 {
                     "pattern": "cat > ...",
                     "pattern_type": "pipe",
                     "example": "cat > outfile.txt",
                     "match": {
-                        "raw_pattern": "cat\\s+>\\s*"
+                        "raw_pattern": "cat\\s*>\\s*"
                     }
                 },
                 {
@@ -38,7 +38,7 @@
                     "pattern_type": "pipe",
                     "example": "cat infile.txt > outfile.txt",
                     "match": {
-                        "raw_pattern": "cat\\s+\\S+\\s*>\\s*"
+                        "raw_pattern": "cat.*?>\\s*"
                     }
                 }
             ],
@@ -47,10 +47,65 @@
                 "irreversible"
             ],
             "reversible": "no",
-            "severity": "WARNING",
+            "severity": "ERROR",
             "likely_consequences": [
                 "data-loss",
                 "data-corruption"
+            ]
+        },
+        {
+            "id": "cat-output-append",
+            "description": "Shell output redirection with >> appends cat's output to the target file. This is generally recoverable if the file structure tolerates additional content.",
+            "patterns": [
+                {
+                    "pattern": "cat >> ...",
+                    "pattern_type": "pipe",
+                    "example": "cat >> outfile.txt",
+                    "match": {
+                        "raw_pattern": "cat\\s*>>\\s*"
+                    }
+                },
+                {
+                    "pattern": "cat ... >> ...",
+                    "pattern_type": "pipe",
+                    "example": "cat infile.txt >> outfile.txt",
+                    "match": {
+                        "raw_pattern": "cat.*?>>\\s*"
+                    }
+                }
+            ],
+            "risk_tags": [
+                "writes-files"
+            ],
+            "reversible": "depends",
+            "reversible_note": "Append is recoverable if the file structure tolerates additional content.",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "data-corruption"
+            ]
+        },
+        {
+            "id": "cat-stdin",
+            "description": "Using the - argument causes cat to read from standard input, which can be an injection vector when the input is controlled by a pipeline or agent.",
+            "patterns": [
+                {
+                    "pattern": "cat - ...",
+                    "pattern_type": "argument",
+                    "example": "cat -",
+                    "match": {
+                        "args_any": [
+                            "-"
+                        ]
+                    }
+                }
+            ],
+            "risk_tags": [
+                "reads-files"
+            ],
+            "reversible": "yes",
+            "severity": "WARNING",
+            "likely_consequences": [
+                "privacy-breach"
             ]
         },
         {
@@ -62,7 +117,9 @@
                     "pattern_type": "flag",
                     "example": "cat -n config.txt",
                     "match": {
-                        "flags_any": ["-n"]
+                        "flags_any": [
+                            "-n"
+                        ]
                     }
                 },
                 {
@@ -70,7 +127,9 @@
                     "pattern_type": "flag",
                     "example": "cat -b file.txt",
                     "match": {
-                        "flags_any": ["-b"]
+                        "flags_any": [
+                            "-b"
+                        ]
                     }
                 },
                 {
@@ -78,7 +137,9 @@
                     "pattern_type": "flag",
                     "example": "cat -E file.txt",
                     "match": {
-                        "flags_any": ["-E"]
+                        "flags_any": [
+                            "-E"
+                        ]
                     }
                 },
                 {
@@ -86,7 +147,9 @@
                     "pattern_type": "flag",
                     "example": "cat -T file.txt",
                     "match": {
-                        "flags_any": ["-T"]
+                        "flags_any": [
+                            "-T"
+                        ]
                     }
                 },
                 {
@@ -94,7 +157,9 @@
                     "pattern_type": "flag",
                     "example": "cat -v file.txt",
                     "match": {
-                        "flags_any": ["-v"]
+                        "flags_any": [
+                            "-v"
+                        ]
                     }
                 },
                 {
@@ -102,7 +167,9 @@
                     "pattern_type": "flag",
                     "example": "cat -s file.txt",
                     "match": {
-                        "flags_any": ["-s"]
+                        "flags_any": [
+                            "-s"
+                        ]
                     }
                 }
             ],
