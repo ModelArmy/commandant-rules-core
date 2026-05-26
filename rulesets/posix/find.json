@@ -84,8 +84,7 @@
       "reversible_note": "The find invocation itself is reversible (do not run the command), but any commands already executed may have caused irreversible changes such as file deletion or modification, which cannot be undone without backups.",
       "severity": "ERROR",
       "likely_consequences": [
-        "unsafe-code-execution",
-        "computer-security-compromise"
+        "unsafe-code-execution"
       ]
     },
     {
@@ -111,8 +110,7 @@
       "reversible_note": "Confirmations are skipped and batch execution is fast, making accidental data loss harder to stop once triggered.",
       "severity": "ERROR",
       "likely_consequences": [
-        "unsafe-code-execution",
-        "data-loss"
+        "unsafe-code-execution"
       ]
     },
     {
@@ -134,7 +132,7 @@
           "pattern_type": "flag-argument-combination",
           "example": "find . -name '*.log' -depth -delete",
           "match": {
-            "flags_any": [
+            "flags_all": [
               "-delete",
               "-depth"
             ]
@@ -251,7 +249,7 @@
           "pattern_type": "subshell",
           "example": "find $(getconf PATH) -name '*.so'",
           "match": {
-            "raw_pattern": "find\\s+\\$\\\\("
+            "raw_pattern": "find\\s+\\$\\("
           }
         },
         {
@@ -316,7 +314,7 @@
           "pattern_type": "pipe",
           "example": "find / -type f > /tmp/manifest.txt",
           "match": {
-            "raw_pattern": "find\\s+.*\\s>\\s"
+            "raw_pattern": "find\\s+.*\\s>(?!>)\\s"
           }
         },
         {
