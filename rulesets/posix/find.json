@@ -23,7 +23,7 @@
         {
           "pattern": "find $PATH ... -ok $CMD ... $TERM",
           "pattern_type": "flag",
-          "example": "find . -name '*.log' -ok rm {} \\;",
+          "example": "find . -name '*.log' -ok rm {} \\; ",
           "match": {
             "flags_any": [
               "-ok",
@@ -39,18 +39,17 @@
       "reversible_note": "Each action requires operator confirmation, but in scripted contexts where input is automated, prompts can be bypassed. Confirmed actions are irreversible.",
       "severity": "WARNING",
       "likely_consequences": [
-        "unsafe-code-execution",
-        "computer-security-compromise"
+        "unsafe-code-execution"
       ]
     },
     {
       "id": "find-executes-code",
-      "description": "Triggers when find is invoked with -exec or -execdir, causing it to execute an arbitrary command on every matched file. This is the most dangerous flag on find — it can read, modify, delete, or exfiltrate data with the privileges of the find caller. -exec runs the command in the starting directory; -execdir runs it in the directory containing the matched file, which is slightly safer but equally capable of destructive actions. If the command passed to -exec contains shell metacharacters, a shell is invoked to interpret them, further expanding risk via variable expansion, pipes, and redirections.",
+      "description": "Triggers when find is invoked with -exec or -execdir, causing it to execute an arbitrary command on every matched file. This is the most dangerous flag on find — it can read, modify, delete, or exfiltrate data with the privileges of the find caller. If the command passed to -exec contains shell metacharacters, a shell is invoked to interpret them, further expanding risk via variable expansion, pipes, and redirections.",
       "patterns": [
         {
-          "pattern": "find $PATH ... -exec $CMD ... $TERM",
+          "pattern": "find $PATH ... -exec $CMD ... \\; ",
           "pattern_type": "flag",
-          "example": "find . -name '*.log' -exec rm {} \\;",
+          "example": "find . -name '*.log' -exec rm {} \\; ",
           "match": {
             "flags_any": [
               "-exec",
@@ -59,9 +58,9 @@
           }
         },
         {
-          "pattern": "find $PATH ... -exec \\$SHELL \\-c $STR $TERM",
+          "pattern": "find $PATH ... -exec $SHELL -c $STR \\; ",
           "pattern_type": "flag-argument-combination",
-          "example": "find . -type f -exec sh -c 'echo {} > /tmp/x' \\;",
+          "example": "find . -type f -exec sh -c 'echo {} > /tmp/x' \\; ",
           "match": {
             "flags_any": [
               "-exec",
@@ -74,8 +73,7 @@
               "zsh",
               "csh",
               "ksh"
-            ],
-            "raw_pattern": "-exec\\s+\\$\\{SHELL\\s|-exec\\s+(sh|bash|dash|zsh|csh|ksh)"
+            ]
           }
         }
       ],
@@ -88,6 +86,33 @@
       "likely_consequences": [
         "unsafe-code-execution",
         "computer-security-compromise"
+      ]
+    },
+    {
+      "id": "find-exec-batch",
+      "description": "Triggers when find is invoked with -exec using the '+' terminator. Unlike the semicolon (\\;) terminator which runs the command once per file, the plus sign (+) aggregates matching files into a single command invocation (or as few as possible), passing them all as arguments. This significantly increases the risk of hitting argument length limits or causing massive, simultaneous destructive actions across thousands of files.",
+      "patterns": [
+        {
+          "pattern": "find $PATH ... -exec $CMD ... +",
+          "pattern_type": "flag",
+          "example": "find . -name '*.log' -exec rm {} +",
+          "match": {
+            "flags_any": [
+              "-exec",
+              "-execdir"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Confirmations are skipped and batch execution is fast, making accidental data loss harder to stop once triggered.",
+      "severity": "ERROR",
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-loss"
       ]
     },
     {
@@ -110,9 +135,7 @@
           "example": "find . -name '*.log' -depth -delete",
           "match": {
             "flags_any": [
-              "-delete"
-            ],
-            "args_any": [
+              "-delete",
               "-depth"
             ]
           }
@@ -161,8 +184,7 @@
       "reversible": "yes",
       "severity": "WARNING",
       "likely_consequences": [
-        "privacy-breach",
-        "computer-security-compromise"
+        "privacy-breach"
       ]
     },
     {
@@ -200,7 +222,7 @@
           }
         },
         {
-          "pattern": "find $PATH ... | \\$SHELL",
+          "pattern": "find $PATH ... | $SHELL",
           "pattern_type": "pipe",
           "example": "find . -type f | sh process.sh",
           "match": {
@@ -216,10 +238,9 @@
       "reversible_note": "The pipe invocation is reversible if caught before execution, but once xargs has dispatched commands to multiple files, the resulting actions may be irreversible.",
       "severity": "ERROR",
       "likely_consequences": [
-        "unsafe-code-execution",
-        "data-loss",
-        "computer-security-compromise"
-      ]
+        "unsafe-code-execution"
+      ],
+      "notes": "data-loss is possible when xargs is paired with destructive commands such as rm, but cannot be inferred from the pipe pattern alone."
     },
     {
       "id": "find-subshell-input",
@@ -230,7 +251,7 @@
           "pattern_type": "subshell",
           "example": "find $(getconf PATH) -name '*.so'",
           "match": {
-            "raw_pattern": "find\\s+\\$\\("
+            "raw_pattern": "find\\s+\\$\\\\("
           }
         },
         {
@@ -292,7 +313,7 @@
       "patterns": [
         {
           "pattern": "find $PATH ... > $FILE",
-          "pattern_type": "flag",
+          "pattern_type": "pipe",
           "example": "find / -type f > /tmp/manifest.txt",
           "match": {
             "raw_pattern": "find\\s+.*\\s>\\s"
@@ -300,7 +321,7 @@
         },
         {
           "pattern": "find $PATH ... >> $FILE",
-          "pattern_type": "flag",
+          "pattern_type": "pipe",
           "example": "find . -name '*.pem' >> /tmp/exposed.txt",
           "match": {
             "raw_pattern": "find\\s+.*\\s>>\\s"
@@ -311,7 +332,32 @@
         "reads-files"
       ],
       "reversible": "yes",
-      "severity": "INFO"
+      "severity": "INFO",
+      "likely_consequences": [
+        "privacy-breach"
+      ]
+    },
+    {
+      "id": "find-print0",
+      "description": "Triggers when find is invoked with -print0, which separates filenames with null characters. This is primarily used as a 'pipeline enabler' to ensure that filenames containing spaces or newlines are correctly handled when piped to xargs -0. While not risky on its own, it enables bulk operations on potentially dangerous file paths.",
+      "patterns": [
+        {
+          "pattern": "find $PATH ... -print0",
+          "pattern_type": "flag",
+          "example": "find . -name '*.log' -print0",
+          "match": {
+            "flags_any": [
+              "-print0"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": []
     }
   ]
 }
