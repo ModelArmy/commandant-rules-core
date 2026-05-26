@@ -1,0 +1,237 @@
+{
+  "tool": "git",
+  "tool_summary": "A distributed version control system for tracking changes in source code during software development.",
+  "platform": "posix",
+  "platform_notes": "Git behavior is consistent across POSIX platforms; no sibling ruleset is needed.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "git-reset-hard",
+      "description": "Forcefully resets the head and index to a specific state, permanently overwriting local changes in the working directory.",
+      "patterns": [
+        {
+          "pattern": "git reset --hard ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git reset --hard HEAD",
+          "match": {
+            "flags_any": ["--hard"],
+            "raw_pattern": "git\\s+reset\\b"
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-clean-force",
+      "description": "Forcefully removes untracked files from the working directory.",
+      "patterns": [
+        {
+          "pattern": "git clean -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git clean -f",
+          "match": {
+            "flags_any": ["-f", "--force"],
+            "raw_pattern": "git\\s+clean\\b"
+          }
+        },
+        {
+          "pattern": "git clean ... -d ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git clean -fd",
+          "match": {
+            "flags_any": ["-d"],
+            "raw_pattern": "git\\s+clean\\b"
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-push-force",
+      "description": "Forcefully updates the remote reference, overwriting history on the server and potentially deleting other contributors' work.",
+      "patterns": [
+        {
+          "pattern": "git push -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git push origin main -f",
+          "match": {
+            "flags_any": ["-f", "--force"],
+            "raw_pattern": "git\\s+push\\b"
+          }
+        },
+        {
+          "pattern": "git push --force ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git push origin main --force",
+          "match": {
+            "flags_any": ["--force"],
+            "raw_pattern": "git\\s+push\\b"
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible", "network-egress"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-branch-delete-force",
+      "description": "Deletes a local branch regardless of whether it has been merged into its upstream branch.",
+      "patterns": [
+        {
+          "pattern": "git branch -D ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git branch -D feature-branch",
+          "match": {
+            "flags_any": ["-D"],
+            "raw_pattern": "git\\s+branch\\b"
+          }
+        }
+      ],
+      "risk_tags": ["irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "notes": "Branch deletion removes a ref, not files on disk; commits become unreachable rather than filesystem data being deleted."
+    },
+    {
+      "id": "git-rm-force",
+      "description": "Forcefully removes files from the working tree and index, regardless of whether they have been committed.",
+      "patterns": [
+        {
+          "pattern": "git rm -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git rm -f file.txt",
+          "match": {
+            "flags_any": ["-f", "--force"],
+            "raw_pattern": "git\\s+rm\\b"
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-checkout-force",
+      "description": "Forces a checkout, overwriting local changes in files that would otherwise prevent the operation.",
+      "patterns": [
+        {
+          "pattern": "git checkout -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git checkout -f main",
+          "match": {
+            "flags_any": ["-f", "--force"],
+            "raw_pattern": "git\\s+checkout\\b"
+          }
+        },
+        {
+          "pattern": "git switch -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git switch -f main",
+          "match": {
+            "flags_any": ["-f", "--force"],
+            "raw_pattern": "git\\s+switch\\b"
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-config-global",
+      "description": "Modifies global git configuration, affecting all repositories for the user.",
+      "patterns": [
+        {
+          "pattern": "git config --global ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git config --global user.name 'John Doe'",
+          "match": {
+            "flags_any": ["--global"],
+            "raw_pattern": "git\\s+config\\b"
+          }
+        }
+      ],
+      "risk_tags": ["modifies-environment"],
+      "reversible": "depends",
+      "reversible_note": "Global config changes persist across all repositories and must be reverted manually.",
+      "severity": "WARNING"
+    },
+    {
+      "id": "git-clone",
+      "description": "Clones a remote repository to the local filesystem.",
+      "patterns": [
+        {
+          "pattern": "git clone ...",
+          "pattern_type": "argument",
+          "example": "git clone https://github.com/user/repo",
+          "match": {
+            "raw_pattern": "git\\s+clone\\b"
+          }
+        }
+      ],
+      "risk_tags": ["network-egress", "writes-files"],
+      "reversible": "yes",
+      "severity": "INFO"
+    },
+    {
+      "id": "git-push-standard",
+      "description": "Pushes local commits to a remote repository without forcing.",
+      "patterns": [
+        {
+          "pattern": "git push ...",
+          "pattern_type": "argument",
+          "example": "git push origin main",
+          "match": {
+            "raw_pattern": "git\\s+push\\b"
+          }
+        }
+      ],
+      "risk_tags": ["network-egress", "writes-files"],
+      "reversible": "yes",
+      "severity": "INFO"
+    },
+    {
+      "id": "git-fetch-pull",
+      "description": "Fetches or pulls data from a remote repository.",
+      "patterns": [
+        {
+          "pattern": "git fetch ...",
+          "pattern_type": "argument",
+          "example": "git fetch origin",
+          "match": {
+            "raw_pattern": "git\\s+fetch\\b"
+          }
+        },
+        {
+          "pattern": "git pull ...",
+          "pattern_type": "argument",
+          "example": "git pull origin main",
+          "match": {
+            "raw_pattern": "git\\s+pull\\b"
+          }
+        }
+      ],
+      "risk_tags": ["network-egress", "reads-files"],
+      "reversible": "yes",
+      "severity": "INFO"
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
