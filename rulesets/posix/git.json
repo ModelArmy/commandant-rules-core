@@ -17,13 +17,20 @@
           "pattern_type": "flag-argument-combination",
           "example": "git reset --hard HEAD",
           "match": {
-            "flags_any": ["--hard"],
+            "flags_any": [
+              "--hard"
+            ],
             "raw_pattern": "git\\s+reset\\b"
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR"
     },
@@ -36,7 +43,10 @@
           "pattern_type": "flag-argument-combination",
           "example": "git clean -f",
           "match": {
-            "flags_any": ["-f", "--force"],
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
             "raw_pattern": "git\\s+clean\\b"
           }
         },
@@ -45,13 +55,20 @@
           "pattern_type": "flag-argument-combination",
           "example": "git clean -fd",
           "match": {
-            "flags_any": ["-d"],
+            "flags_any": [
+              "-d"
+            ],
             "raw_pattern": "git\\s+clean\\b"
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR"
     },
@@ -64,22 +81,23 @@
           "pattern_type": "flag-argument-combination",
           "example": "git push origin main -f",
           "match": {
-            "flags_any": ["-f", "--force"],
-            "raw_pattern": "git\\s+push\\b"
-          }
-        },
-        {
-          "pattern": "git push --force ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "git push origin main --force",
-          "match": {
-            "flags_any": ["--force"],
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
             "raw_pattern": "git\\s+push\\b"
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible", "network-egress"],
-      "likely_consequences": ["data-loss", "data-corruption"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
       "reversible": "no",
       "severity": "ERROR"
     },
@@ -92,16 +110,23 @@
           "pattern_type": "flag-argument-combination",
           "example": "git branch -D feature-branch",
           "match": {
-            "flags_any": ["-D"],
+            "flags_any": [
+              "-D"
+            ],
             "raw_pattern": "git\\s+branch\\b"
           }
         }
       ],
-      "risk_tags": ["irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR",
-      "notes": "Branch deletion removes a ref, not files on disk; commits become unreachable rather than filesystem data being deleted."
+      "notes": "Branch deletion removes a ref, not files on disk; however, it's treated as file deletion for schema consistency. Commits become unreachable rather than filesystem data being deleted."
     },
     {
       "id": "git-rm-force",
@@ -112,13 +137,21 @@
           "pattern_type": "flag-argument-combination",
           "example": "git rm -f file.txt",
           "match": {
-            "flags_any": ["-f", "--force"],
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
             "raw_pattern": "git\\s+rm\\b"
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR"
     },
@@ -131,7 +164,10 @@
           "pattern_type": "flag-argument-combination",
           "example": "git checkout -f main",
           "match": {
-            "flags_any": ["-f", "--force"],
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
             "raw_pattern": "git\\s+checkout\\b"
           }
         },
@@ -140,13 +176,21 @@
           "pattern_type": "flag-argument-combination",
           "example": "git switch -f main",
           "match": {
-            "flags_any": ["-f", "--force"],
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
             "raw_pattern": "git\\s+switch\\b"
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR"
     },
@@ -159,14 +203,53 @@
           "pattern_type": "flag-argument-combination",
           "example": "git config --global user.name 'John Doe'",
           "match": {
-            "flags_any": ["--global"],
+            "flags_any": [
+              "--global"
+            ],
             "raw_pattern": "git\\s+config\\b"
           }
         }
       ],
-      "risk_tags": ["modifies-environment"],
+      "risk_tags": [
+        "modifies-environment"
+      ],
       "reversible": "depends",
       "reversible_note": "Global config changes persist across all repositories and must be reverted manually.",
+      "severity": "WARNING"
+    },
+    {
+      "id": "git-config-global-unset",
+      "description": "Removes global git configuration settings, which may break expected tool behavior or authentication across all repositories.",
+      "patterns": [
+        {
+          "pattern": "git config --global --unset ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git config --global --unset user.name",
+          "match": {
+            "flags_all": [
+              "--global",
+              "--unset"
+            ],
+            "raw_pattern": "git\\s+config\\b"
+          }
+        },
+        {
+          "pattern": "git config --global --remove-section ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git config --global --remove-section user",
+          "match": {
+            "flags_all": [
+              "--global",
+              "--remove-section"
+            ],
+            "raw_pattern": "git\\s+config\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "modifies-environment"
+      ],
+      "reversible": "yes",
       "severity": "WARNING"
     },
     {
@@ -182,7 +265,10 @@
           }
         }
       ],
-      "risk_tags": ["network-egress", "writes-files"],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
       "reversible": "yes",
       "severity": "INFO"
     },
@@ -195,11 +281,14 @@
           "pattern_type": "argument",
           "example": "git push origin main",
           "match": {
-            "raw_pattern": "git\\s+push\\b"
+            "raw_pattern": "git\\s+push\\b(?!.*(?:-f|--force))"
           }
         }
       ],
-      "risk_tags": ["network-egress", "writes-files"],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
       "reversible": "yes",
       "severity": "INFO"
     },
@@ -224,13 +313,91 @@
           }
         }
       ],
-      "risk_tags": ["network-egress", "reads-files"],
+      "risk_tags": [
+        "network-egress",
+        "reads-files"
+      ],
       "reversible": "yes",
       "severity": "INFO"
+    },
+    {
+      "id": "git-rebase-interactive",
+      "description": "Starts an interactive rebase to rewrite commit history, which can lead to data loss if commits are dropped or modified incorrectly.",
+      "patterns": [
+        {
+          "pattern": "git rebase -i ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "git rebase -i HEAD~3",
+          "match": {
+            "flags_any": [
+              "-i",
+              "--interactive"
+            ],
+            "raw_pattern": "git\\s+rebase\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "WARNING"
+    },
+    {
+      "id": "git-stash-drop",
+      "description": "Removes the most recent stash entry permanently.",
+      "patterns": [
+        {
+          "pattern": "git stash drop ...",
+          "pattern_type": "argument",
+          "example": "git stash drop",
+          "match": {
+            "raw_pattern": "git\\s+stash\\s+drop\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "git-stash-clear",
+      "description": "Removes all entries from the stash list permanently.",
+      "patterns": [
+        {
+          "pattern": "git stash clear ...",
+          "pattern_type": "argument",
+          "example": "git stash clear",
+          "match": {
+            "raw_pattern": "git\\s+stash\\s+clear\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR"
     }
   ],
   "default_rule": {
-    "risk_tags": ["reads-files"],
+    "risk_tags": [
+      "reads-files"
+    ],
     "reversible": "yes",
     "severity": "INFO"
   }
