@@ -1,0 +1,86 @@
+{
+  "tool": "convert",
+  "tool_summary": "ImageMagick command used to create, convert, and edit raster images.",
+  "platform": "posix",
+  "platform_notes": "The 'convert' utility is part of ImageMagick. In ImageMagick 7, the primary binary is 'magick', but 'convert' remains as a compatibility alias for backward compatibility.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "convert-network-egress",
+      "description": "Using URLs as input allows the tool to make outbound network connections.",
+      "patterns": [
+        {
+          "pattern": "convert http://... ...",
+          "pattern_type": "argument",
+          "example": "convert http://example.com/image.jpg out.jpg",
+          "match": {
+            "raw_pattern": "(https?|ftp)://"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING"
+    },
+    {
+      "id": "convert-delegate-execution",
+      "description": "Processing formats like PDF, SVG, or EPS often triggers external delegates (such as Ghostscript), which have a history of security vulnerabilities including arbitrary code execution.",
+      "patterns": [
+        {
+          "pattern": "convert ... .pdf ...",
+          "pattern_type": "argument",
+          "example": "convert input.pdf output.jpg",
+          "match": {
+            "raw_pattern": "\\.(pdf|svg|eps|ps)(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING"
+    },
+    {
+      "id": "convert-intermediate-write",
+      "description": "The -write flag saves an intermediate image to a file, which may overwrite existing files on the filesystem.",
+      "patterns": [
+        {
+          "pattern": "convert ... -write ... ...",
+          "pattern_type": "flag",
+          "example": "convert input.jpg -resize 100x100 -write resized.jpg output.jpg",
+          "match": {
+            "flags_any": [
+              "-write"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING"
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files",
+      "writes-files"
+    ],
+    "reversible": "no",
+    "severity": "INFO"
+  }
+}

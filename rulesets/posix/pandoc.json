@@ -1,0 +1,144 @@
+{
+  "tool": "pandoc",
+  "tool_summary": "A universal document converter that converts files from one markup format to another.",
+  "platform": "posix",
+  "platform_notes": "Pandoc is a standalone binary with consistent behavior across POSIX platforms.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pandoc-filter-execution",
+      "description": "Using external filters allows pandoc to execute arbitrary scripts (Lua, Python, etc.) during the conversion process.",
+      "patterns": [
+        {
+          "pattern": "pandoc --filter ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc --filter my-filter.py input.md -o output.docx",
+          "match": {
+            "flags_any": ["--filter"]
+          }
+        },
+        {
+          "pattern": "pandoc --lua-filter ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc --lua-filter my-filter.lua input.md -o output.docx",
+          "match": {
+            "flags_any": ["--lua-filter"]
+          }
+        },
+        {
+          "pattern": "pandoc --javascript-filter ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc --javascript-filter my-filter.js input.md -o output.docx",
+          "match": {
+            "flags_any": ["--javascript-filter"]
+          }
+        },
+        {
+          "pattern": "pandoc --python-filter ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc --python-filter my-filter.py input.md -o output.docx",
+          "match": {
+            "flags_any": ["--python-filter"]
+          }
+        },
+        {
+          "pattern": "pandoc --json-filter ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc --json-filter my-filter.json input.md -o output.docx",
+          "match": {
+            "flags_any": ["--json-filter"]
+          }
+        }
+      ],
+      "risk_tags": ["executes-code"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the actions taken by the executed filter script.",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "pandoc-engine-execution",
+      "description": "Specifying a custom PDF or PPTX engine allows pandoc to execute arbitrary binaries on the system.",
+      "patterns": [
+        {
+          "pattern": "pandoc --pdf-engine ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc input.md --pdf-engine=/tmp/evil_bin -o output.pdf",
+          "match": {
+            "flags_any": ["--pdf-engine"]
+          }
+        },
+        {
+          "pattern": "pandoc --pptx-engine ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc input.md --pptx-engine=/tmp/evil_bin -o output.pptx",
+          "match": {
+            "flags_any": ["--pptx-engine"]
+          }
+        }
+      ],
+      "risk_tags": ["executes-code"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the actions taken by the executed binary.",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "pandoc-output",
+      "description": "The -o flag writes output to a specific file, overwriting any existing content in that path.",
+      "patterns": [
+        {
+          "pattern": "pandoc -o ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc input.md -o output.pdf",
+          "match": {
+            "flags_any": ["-o"]
+          }
+        },
+        {
+          "pattern": "pandoc --output ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc input.md --output output.pdf",
+          "match": {
+            "flags_any": ["--output"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "pandoc-media-extraction",
+      "description": "The --extract-media flag writes media files from the input document to the local filesystem.",
+      "patterns": [
+        {
+          "pattern": "pandoc --extract-media ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "pandoc input.docx --extract-media=./images -o output.md",
+          "match": {
+            "flags_any": ["--extract-media"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files"],
+      "likely_consequences": ["data-corruption"],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "While primarily used for legitimate media extraction, it allows Pandoc to write multiple files to a specified directory."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}

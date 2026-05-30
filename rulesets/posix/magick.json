@@ -1,0 +1,94 @@
+{
+  "tool": "magick",
+  "tool_summary": "A comprehensive image processing tool for creating, editing, and converting images.",
+  "platform": "posix",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "magick-mogrify-overwrite",
+      "description": "The mogrify command (accessible via 'magick mogrify') modifies files in place, overwriting the original images by default.",
+      "patterns": [
+        {
+          "pattern": "magick mogrify ...",
+          "pattern_type": "argument",
+          "example": "magick mogrify -resize 50% *.jpg",
+          "match": {
+            "args_any": ["mogrify"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false,
+      "notes": "mogrify is fundamentally destructive as it overwrites the source files. Use 'magick' (convert) to create new files instead."
+    },
+    {
+      "id": "magick-remote-read",
+      "description": "Loading images from remote URLs can expose system information or be used for SSRF attacks.",
+      "patterns": [
+        {
+          "pattern": "magick ... http://...",
+          "pattern_type": "argument",
+          "example": "magick https://example.com/image.jpg output.png",
+          "match": {
+            "raw_pattern": "https?://|ftp://"
+          }
+        }
+      ],
+      "risk_tags": ["network-egress", "reads-files"],
+      "likely_consequences": ["privacy-breach"],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "magick-parameter-file",
+      "description": "The '@filename' syntax allows reading options and arguments from a file, which can be exploited to read sensitive files or inject dangerous flags.",
+      "patterns": [
+        {
+          "pattern": "magick ... @...",
+          "pattern_type": "argument",
+          "example": "magick @params.txt output.png",
+          "match": {
+            "raw_pattern": "@\\S+"
+          }
+        }
+      ],
+      "risk_tags": ["reads-files"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "Depending on the content of the parameter file, this can trigger delegates that execute shell commands or read arbitrary files."
+    },
+    {
+      "id": "magick-write-file",
+      "description": "The -write flag explicitly writes the current image state to a specified file, potentially overwriting existing data.",
+      "patterns": [
+        {
+          "pattern": "magick ... -write ...",
+          "pattern_type": "flag",
+          "example": "magick input.jpg -resize 50% -write intermediate.jpg output.png",
+          "match": {
+            "flags_any": ["-write"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}

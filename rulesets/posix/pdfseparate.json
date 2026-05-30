@@ -1,0 +1,66 @@
+{
+  "tool": "pdfseparate",
+  "tool_summary": "Extracts pages from a PDF file into separate individual PDF files.",
+  "platform": "posix",
+  "platform_notes": "Standard poppler-utils implementation; behavior is consistent across most POSIX systems.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pdfseparate-info",
+      "description": "The -h and -v flags provide help or version information without accessing files or writing data.",
+      "patterns": [
+        {
+          "pattern": "pdfseparate -h ...",
+          "pattern_type": "flag",
+          "example": "pdfseparate -h",
+          "match": {
+            "flags_any": ["-h", "--help"]
+          }
+        },
+        {
+          "pattern": "pdfseparate -v ...",
+          "pattern_type": "flag",
+          "example": "pdfseparate -v",
+          "match": {
+            "flags_any": ["-v", "--version"]
+          }
+        }
+      ],
+      "risk_tags": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "pdfseparate-subshell",
+      "description": "A subshell expression inside a command argument executes arbitrary commands.",
+      "patterns": [
+        {
+          "pattern": "pdfseparate ... $(...)...",
+          "pattern_type": "subshell",
+          "example": "pdfseparate 1-5 input.pdf $(date +%Y).pdf",
+          "match": {
+            "raw_pattern": "\\$\\(|`"
+          }
+        }
+      ],
+      "risk_tags": ["executes-code", "subshell"],
+      "likely_consequences": ["unsafe-code-execution"],
+      "reversible": "depends",
+      "reversible_note": "Depends on the commands executed within the subshell.",
+      "severity": "ERROR",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files",
+      "writes-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING"
+  }
+}
