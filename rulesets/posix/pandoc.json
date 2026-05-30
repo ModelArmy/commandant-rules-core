@@ -10,7 +10,7 @@
   "rules": [
     {
       "id": "pandoc-filter-execution",
-      "description": "Using external filters allows pandoc to execute arbitrary scripts (Lua, Python, etc.) during the conversion process.",
+      "description": "Using external filters allows pandoc to execute arbitrary scripts (Lua, JSON, etc.) during the conversion process.",
       "patterns": [
         {
           "pattern": "pandoc --filter ...",
@@ -26,22 +26,6 @@
           "example": "pandoc --lua-filter my-filter.lua input.md -o output.docx",
           "match": {
             "flags_any": ["--lua-filter"]
-          }
-        },
-        {
-          "pattern": "pandoc --javascript-filter ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "pandoc --javascript-filter my-filter.js input.md -o output.docx",
-          "match": {
-            "flags_any": ["--javascript-filter"]
-          }
-        },
-        {
-          "pattern": "pandoc --python-filter ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "pandoc --python-filter my-filter.py input.md -o output.docx",
-          "match": {
-            "flags_any": ["--python-filter"]
           }
         },
         {
@@ -112,7 +96,7 @@
       "risk_tags": ["writes-files", "irreversible"],
       "likely_consequences": ["data-loss", "data-corruption"],
       "reversible": "no",
-      "severity": "WARNING",
+      "severity": "ERROR",
       "all_match": false
     },
     {
@@ -129,7 +113,6 @@
         }
       ],
       "risk_tags": ["writes-files"],
-      "likely_consequences": ["data-corruption"],
       "reversible": "no",
       "severity": "WARNING",
       "all_match": false,

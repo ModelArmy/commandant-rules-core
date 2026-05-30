@@ -2,6 +2,7 @@
   "tool": "magick",
   "tool_summary": "A comprehensive image processing tool for creating, editing, and converting images.",
   "platform": "posix",
+  "platform_notes": "In ImageMagick v7, most functions previously provided by 'convert' are now part of the 'magick' command. On legacy systems using ImageMagick v6, users would typically use 'convert', 'mogrify', etc., directly.",
   "llm_confidence": "high",
   "unknown_flags": [],
   "is_multiplexer": false,
@@ -41,7 +42,6 @@
         }
       ],
       "risk_tags": ["network-egress", "reads-files"],
-      "likely_consequences": ["privacy-breach"],
       "reversible": "yes",
       "severity": "WARNING",
       "all_match": false
@@ -59,7 +59,7 @@
           }
         }
       ],
-      "risk_tags": ["reads-files"],
+      "risk_tags": ["reads-files", "executes-code"],
       "likely_consequences": ["unsafe-code-execution"],
       "reversible": "yes",
       "severity": "WARNING",
@@ -79,9 +79,9 @@
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible"],
-      "likely_consequences": ["data-loss", "data-corruption"],
-      "reversible": "no",
+      "risk_tags": ["writes-files"],
+      "likely_consequences": ["data-corruption"],
+      "reversible": "yes",
       "severity": "WARNING",
       "all_match": false
     }

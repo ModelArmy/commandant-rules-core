@@ -2,7 +2,7 @@
   "tool": "convert",
   "tool_summary": "ImageMagick command used to create, convert, and edit raster images.",
   "platform": "posix",
-  "platform_notes": "The 'convert' utility is part of ImageMagick. In ImageMagick 7, the primary binary is 'magick', but 'convert' remains as a compatibility alias for backward compatibility.",
+  "platform_notes": "The 'convert' utility is part of ImageMagick. In ImageMagick 7, the primary binary is 'magick', but 'convert' remains as a compatibility alias for backward compatibility. Note that IM6 'convert' and IM7 'magick convert' are equivalent; rulesets should be reviewed together.",
   "llm_confidence": "high",
   "unknown_flags": [],
   "is_multiplexer": false,
@@ -47,7 +47,7 @@
         "unsafe-code-execution"
       ],
       "reversible": "yes",
-      "severity": "WARNING"
+      "severity": "ERROR"
     },
     {
       "id": "convert-intermediate-write",
@@ -72,7 +72,26 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "WARNING"
+      "severity": "ERROR"
+    },
+    {
+      "id": "convert-at-file-input",
+      "description": "Using a filename prefixed with '@' allows loading settings or multiple images from an external file.",
+      "patterns": [
+        {
+          "pattern": "convert @... ...",
+          "pattern_type": "argument",
+          "example": "convert @list.txt output.jpg",
+          "match": {
+            "raw_pattern": "^@"
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO"
     }
   ],
   "default_rule": {
