@@ -17,12 +17,20 @@
           "pattern_type": "argument",
           "example": "magick mogrify -resize 50% *.jpg",
           "match": {
-            "args_any": ["mogrify"]
+            "args_any": [
+              "mogrify"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible"],
-      "likely_consequences": ["data-loss", "data-corruption"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
       "reversible": "no",
       "severity": "ERROR",
       "all_match": false,
@@ -41,7 +49,10 @@
           }
         }
       ],
-      "risk_tags": ["network-egress", "reads-files"],
+      "risk_tags": [
+        "network-egress",
+        "reads-files"
+      ],
       "reversible": "yes",
       "severity": "WARNING",
       "all_match": false
@@ -59,8 +70,13 @@
           }
         }
       ],
-      "risk_tags": ["reads-files", "executes-code"],
-      "likely_consequences": ["unsafe-code-execution"],
+      "risk_tags": [
+        "reads-files",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
       "reversible": "yes",
       "severity": "WARNING",
       "all_match": false,
@@ -75,19 +91,28 @@
           "pattern_type": "flag",
           "example": "magick input.jpg -resize 50% -write intermediate.jpg output.png",
           "match": {
-            "flags_any": ["-write"]
+            "flags_any": [
+              "-write"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files"],
-      "likely_consequences": ["data-corruption"],
-      "reversible": "yes",
-      "severity": "WARNING",
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
       "all_match": false
     }
   ],
   "default_rule": {
-    "risk_tags": ["reads-files"],
+    "risk_tags": [
+      "reads-files"
+    ],
     "reversible": "yes",
     "severity": "INFO"
   }

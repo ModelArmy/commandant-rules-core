@@ -76,22 +76,23 @@
     },
     {
       "id": "convert-at-file-input",
-      "description": "Using a filename prefixed with '@' allows loading settings or multiple images from an external file.",
+      "description": "Using a filename prefixed with '@' allows loading settings or multiple images from an external file, which may inject dangerous flags or trigger delegate execution.",
       "patterns": [
         {
           "pattern": "convert @... ...",
           "pattern_type": "argument",
           "example": "convert @list.txt output.jpg",
           "match": {
-            "raw_pattern": "^@"
+            "raw_pattern": "@\\S+"
           }
         }
       ],
       "risk_tags": [
-        "reads-files"
+        "reads-files",
+        "executes-code"
       ],
       "reversible": "yes",
-      "severity": "INFO"
+      "severity": "WARNING"
     }
   ],
   "default_rule": {

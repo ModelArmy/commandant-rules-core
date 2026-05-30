@@ -17,7 +17,9 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc --filter my-filter.py input.md -o output.docx",
           "match": {
-            "flags_any": ["--filter"]
+            "flags_any": [
+              "--filter"
+            ]
           }
         },
         {
@@ -25,7 +27,9 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc --lua-filter my-filter.lua input.md -o output.docx",
           "match": {
-            "flags_any": ["--lua-filter"]
+            "flags_any": [
+              "--lua-filter"
+            ]
           }
         },
         {
@@ -33,12 +37,18 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc --json-filter my-filter.json input.md -o output.docx",
           "match": {
-            "flags_any": ["--json-filter"]
+            "flags_any": [
+              "--json-filter"
+            ]
           }
         }
       ],
-      "risk_tags": ["executes-code"],
-      "likely_consequences": ["unsafe-code-execution"],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversibility depends on the actions taken by the executed filter script.",
       "severity": "ERROR",
@@ -46,27 +56,25 @@
     },
     {
       "id": "pandoc-engine-execution",
-      "description": "Specifying a custom PDF or PPTX engine allows pandoc to execute arbitrary binaries on the system.",
+      "description": "Specifying a custom PDF engine allows pandoc to execute arbitrary binaries on the system.",
       "patterns": [
         {
           "pattern": "pandoc --pdf-engine ...",
           "pattern_type": "flag-argument-combination",
           "example": "pandoc input.md --pdf-engine=/tmp/evil_bin -o output.pdf",
           "match": {
-            "flags_any": ["--pdf-engine"]
-          }
-        },
-        {
-          "pattern": "pandoc --pptx-engine ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "pandoc input.md --pptx-engine=/tmp/evil_bin -o output.pptx",
-          "match": {
-            "flags_any": ["--pptx-engine"]
+            "flags_any": [
+              "--pdf-engine"
+            ]
           }
         }
       ],
-      "risk_tags": ["executes-code"],
-      "likely_consequences": ["unsafe-code-execution"],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversibility depends on the actions taken by the executed binary.",
       "severity": "ERROR",
@@ -81,7 +89,9 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc input.md -o output.pdf",
           "match": {
-            "flags_any": ["-o"]
+            "flags_any": [
+              "-o"
+            ]
           }
         },
         {
@@ -89,12 +99,20 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc input.md --output output.pdf",
           "match": {
-            "flags_any": ["--output"]
+            "flags_any": [
+              "--output"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible"],
-      "likely_consequences": ["data-loss", "data-corruption"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
       "reversible": "no",
       "severity": "ERROR",
       "all_match": false
@@ -108,11 +126,15 @@
           "pattern_type": "flag-argument-combination",
           "example": "pandoc input.docx --extract-media=./images -o output.md",
           "match": {
-            "flags_any": ["--extract-media"]
+            "flags_any": [
+              "--extract-media"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files"],
+      "risk_tags": [
+        "writes-files"
+      ],
       "reversible": "no",
       "severity": "WARNING",
       "all_match": false,
@@ -120,7 +142,9 @@
     }
   ],
   "default_rule": {
-    "risk_tags": ["reads-files"],
+    "risk_tags": [
+      "reads-files"
+    ],
     "reversible": "yes",
     "severity": "INFO"
   }
