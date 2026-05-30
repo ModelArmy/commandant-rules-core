@@ -1,0 +1,42 @@
+{
+  "tool": "type",
+  "tool_summary": "Displays the contents of one or more text files to the standard output.",
+  "platform": "windows",
+  "platform_notes": "The Windows type command is a basic read-only utility with no flags. Its behavior is consistent across common Windows environments.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "type-reads-files",
+      "description": "The type command reads the contents of one or more specified files and outputs them to the terminal. This may expose sensitive information depending on the target file.",
+      "patterns": [
+        {
+          "pattern": "type ...",
+          "pattern_type": "argument",
+          "example": "type C:\\secrets\\password.txt",
+          "match": {
+            "raw_pattern": "^type\\s+.+"
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "notes": "The tool is read-only. The risk of privacy breach depends entirely on the file targeted by the user."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
