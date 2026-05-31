@@ -29,6 +29,27 @@
       ],
       "reversible": "yes",
       "severity": "INFO"
+    },
+    {
+      "id": "dir-attributes",
+      "description": "The /A flag displays files with specified attributes, including hidden and system files that are normally omitted from the listing.",
+      "patterns": [
+        {
+          "pattern": "dir /a ...",
+          "pattern_type": "flag",
+          "example": "dir /a",
+          "match": {
+            "flags_any": [
+              "/a"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO"
     }
   ],
   "default_rule": {
