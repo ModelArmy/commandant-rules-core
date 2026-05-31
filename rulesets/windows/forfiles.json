@@ -34,6 +34,7 @@
       "reversible": "depends",
       "reversible_note": "Depends on what is downloaded or transmitted — payload execution may be irreversible, file downloads are recoverable from the target location.",
       "severity": "ERROR",
+      "notes": "computer-security-compromise is included because the matched tools (curl, certutil, bitsadmin, Invoke-WebRequest) are specifically associated with payload download and execution in Windows attack chains, not general network access. The compromise is considered direct when these tools are used to fetch and run remote code. If this fires on a legitimate use, the notes field should be reviewed against the specific command context.",
       "all_match": false
     },
     {
