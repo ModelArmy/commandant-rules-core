@@ -24,57 +24,6 @@
       "risk_tags": ["reads-files", "recursive"],
       "reversible": "yes",
       "severity": "INFO"
-    },
-    {
-      "id": "findstr-regex",
-      "description": "The /r flag treats the search string as a regular expression, allowing for more complex search patterns.",
-      "patterns": [
-        {
-          "pattern": "findstr /r ...",
-          "pattern_type": "flag",
-          "example": "findstr /r \"[0-9]*\" file.txt",
-          "match": {
-            "flags_any": ["/r"]
-          }
-        }
-      ],
-      "risk_tags": ["reads-files"],
-      "reversible": "yes",
-      "severity": "INFO"
-    },
-    {
-      "id": "findstr-case-insensitive",
-      "description": "The /i flag makes the search case-insensitive.",
-      "patterns": [
-        {
-          "pattern": "findstr /i ...",
-          "pattern_type": "flag",
-          "example": "findstr /i \"Pattern\" file.txt",
-          "match": {
-            "flags_any": ["/i"]
-          }
-        }
-      ],
-      "risk_tags": ["reads-files"],
-      "reversible": "yes",
-      "severity": "INFO"
-    },
-    {
-      "id": "findstr-inverse-match",
-      "description": "The /v flag prints only those lines that do not contain a match.",
-      "patterns": [
-        {
-          "pattern": "findstr /v ...",
-          "pattern_type": "flag",
-          "example": "findstr /v \"exclude\" file.txt",
-          "match": {
-            "flags_any": ["/v"]
-          }
-        }
-      ],
-      "risk_tags": ["reads-files"],
-      "reversible": "yes",
-      "severity": "INFO"
     }
   ],
   "default_rule": {
