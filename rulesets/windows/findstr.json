@@ -1,0 +1,34 @@
+{
+  "tool": "findstr",
+  "tool_summary": "A Windows native utility for searching strings or regular expressions in one or more files.",
+  "platform": "windows",
+  "platform_notes": "Native Windows tool; conceptually similar to grep but uses forward-slash flags (e.g., /s instead of -r). Only reads files and does not modify them, making its operations inherently reversible.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "findstr-recursive",
+      "description": "The /s flag searches for matching files in the current directory and all subdirectories.",
+      "patterns": [
+        {
+          "pattern": "findstr /s ...",
+          "pattern_type": "flag",
+          "example": "findstr /s \"pattern\" *.*",
+          "match": {
+            "flags_any": ["/s"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files", "recursive"],
+      "reversible": "yes",
+      "severity": "INFO"
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
