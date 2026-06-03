@@ -1,0 +1,141 @@
+{
+  "tool": "xargs",
+  "tool_summary": "Builds and executes commands from standard input.",
+  "platform": "posix",
+  "platform_notes": "The base POSIX specification defines -I, -L, and -n. Extensions like -0 (null delimiter), -a (arg-file), or -P (parallelism) are common in GNU/BSD but may not be available on all POSIX systems.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "xargs-shell-execution",
+      "description": "Invoking a shell (e.g., sh -c) via xargs allows for complex command sequences, pipes, and redirections, significantly increasing the risk of unsafe code execution.",
+      "patterns": [
+        {
+          "pattern": "xargs ... sh -c ...",
+          "pattern_type": "subshell",
+          "example": "find . -name '*.txt' | xargs sh -c 'echo {} && rm {}'",
+          "match": {
+            "raw_pattern": "(sh|bash|zsh|ksh)\\s+-c"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "subshell"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Depends on the commands executed by the shell.",
+      "severity": "ERROR",
+      "all_match": false,
+      "notes": "The presence of a shell allows for command injection if input is untrusted."
+    },
+    {
+      "id": "xargs-parallel-execution",
+      "description": "The -P flag enables parallel execution. High values or -P 0 can lead to system resource exhaustion (CPU/RAM DOS), potentially crashing the host.",
+      "patterns": [
+        {
+          "pattern": "xargs -P ... ...",
+          "pattern_type": "flag",
+          "example": "find . -name '*.txt' | xargs -P 100 rm",
+          "match": {
+            "flags_any": [
+              "-P"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The reversibility depends on the command executed by xargs, not the parallel execution flag itself.",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "While not destructive to files, excessive parallelism can lead to Denial of Service."
+    },
+    {
+      "id": "xargs-arg-file",
+      "description": "The -a flag (or --arg-file) tells xargs to read input from a specific file instead of stdin.",
+      "patterns": [
+        {
+          "pattern": "xargs -a ... ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "xargs -a list.txt rm",
+          "match": {
+            "flags_any": [
+              "-a"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "executes-code"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The reversibility depends on the command executed by xargs, not the source of the arguments.",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "Changes the input source; risk depends on the commanded tool."
+    },
+    {
+      "id": "xargs-null-delimiter",
+      "description": "The -0 flag specifies that input items are terminated by a null character instead of whitespace. This is typically used in pipelines with find -print0 to safely handle filenames containing spaces.",
+      "patterns": [
+        {
+          "pattern": "xargs -0 ...",
+          "pattern_type": "flag",
+          "example": "find . -print0 | xargs -0 rm",
+          "match": {
+            "flags_any": [
+              "-0"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false,
+      "notes": "Signals intent to process bulk filenames with special characters via a pipeline."
+    },
+    {
+      "id": "xargs-replace",
+      "description": "The -I flag allows substituting a placeholder in the command template with each input line. This can be an injection vector if the input is untrusted.",
+      "patterns": [
+        {
+          "pattern": "xargs -I ... ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "cat list.txt | xargs -I {} echo \"Processing {}\"",
+          "match": {
+            "flags_any": [
+              "-I"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The reversibility depends on the command executed by xargs.",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "Precise injection of input into arbitrary command positions can lead to unsafe execution if input is not sanitized."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING"
+  }
+}
