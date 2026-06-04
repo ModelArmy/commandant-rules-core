@@ -1,0 +1,124 @@
+{
+  "tool": "jq",
+  "tool_summary": "A lightweight and flexible command-line JSON processor.",
+  "platform": "posix",
+  "platform_notes": "jq behavior is consistent across POSIX platforms; no platform-specific variants are typically required as it doesn't modify files via flags directly.",
+  "llm_confidence": "high",
+  "unknown_flags": [
+    "--argjson",
+    "--jsonargs"
+  ],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "jq-subshell",
+      "description": "Using subshells or backticks within jq arguments can lead to arbitrary code execution.",
+      "patterns": [
+        {
+          "pattern": "jq ... $(...)",
+          "pattern_type": "subshell",
+          "example": "jq '.foo' $(ls | head -n 1)",
+          "match": {
+            "raw_pattern": "\\$\\(|`"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "subshell"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Depends on the command executed by the subshell.",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "jq-arg-file",
+      "description": "jq flags like --slurpfile and --rawfile can be used to read external files into the filter.",
+      "patterns": [
+        {
+          "pattern": "jq --slurpfile ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "jq --slurpfile var file.json",
+          "match": {
+            "flags_any": [
+              "--slurpfile"
+            ]
+          }
+        },
+        {
+          "pattern": "jq --rawfile ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "jq --rawfile var file.json",
+          "match": {
+            "flags_any": [
+              "--rawfile"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "jq-output-append",
+      "description": "Shell redirection allows jq output to be appended to files, potentially modifying critical system files.",
+      "patterns": [
+        {
+          "pattern": "jq ... >> ...",
+          "pattern_type": "pipe",
+          "example": "jq '.' file.json >> out.txt",
+          "match": {
+            "raw_pattern": ">>"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Effect depends on whether the target file exists and its existing contents.",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "jq-output-overwrite",
+      "description": "Shell redirection allows jq output to be written to files, potentially overwriting critical system files.",
+      "patterns": [
+        {
+          "pattern": "jq ... > ...",
+          "pattern_type": "pipe",
+          "example": "jq '.' file.json > out.txt",
+          "match": {
+            "raw_pattern": ">(?!>)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
