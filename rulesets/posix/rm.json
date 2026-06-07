@@ -1,0 +1,128 @@
+{
+  "tool": "rm",
+  "tool_summary": "A command used to remove files and directories from the filesystem.",
+  "platform": "posix",
+  "platform_notes": "The -r and -R flags are functionally equivalent in POSIX for recursive removal. The -d flag is available in POSIX to remove empty directories, acting similarly to rmdir.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "rm-recursive-force",
+      "description": "Combining recursive removal with the force flag removes directory trees without prompting and ignores non-existent files, significantly increasing the risk of accidental mass data loss.",
+      "patterns": [
+        {
+          "pattern": "rm -rf ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "rm -rf /home/user/old_project",
+          "match": {
+            "flags_all": ["-r", "-f"]
+          }
+        },
+        {
+          "pattern": "rm -fr ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "rm -fr /tmp/logs",
+          "match": {
+            "flags_all": ["-r", "-f"]
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "recursive", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "rm-recursive",
+      "description": "The -r or -R flags enable recursive removal of directories and their contents.",
+      "patterns": [
+        {
+          "pattern": "rm -r ...",
+          "pattern_type": "flag",
+          "example": "rm -r directory/",
+          "match": {
+            "flags_any": ["-r"]
+          }
+        },
+        {
+          "pattern": "rm -R ...",
+          "pattern_type": "flag",
+          "example": "rm -R directory/",
+          "match": {
+            "flags_any": ["-R"]
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "recursive", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "rm-force",
+      "description": "The -f flag forces removal without prompting and ignores non-existent files, removing safety checks.",
+      "patterns": [
+        {
+          "pattern": "rm -f ...",
+          "pattern_type": "flag",
+          "example": "rm -f file.txt",
+          "match": {
+            "flags_any": ["-f"]
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "rm-interactive",
+      "description": "The -i flag prompts the user for confirmation before every removal, reducing the risk of accidental deletion.",
+      "patterns": [
+        {
+          "pattern": "rm -i ...",
+          "pattern_type": "flag",
+          "example": "rm -i file.txt",
+          "match": {
+            "flags_any": ["-i"]
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "rm-empty-dir",
+      "description": "The -d flag allows the removal of empty directories. It is less risky than recursive removal as it fails if the directory contains files.",
+      "patterns": [
+        {
+          "pattern": "rm -d ...",
+          "pattern_type": "flag",
+          "example": "rm -d empty_folder/",
+          "match": {
+            "flags_any": ["-d"]
+          }
+        }
+      ],
+      "risk_tags": ["deletes-files", "irreversible"],
+      "likely_consequences": ["data-loss"],
+      "reversible": "no",
+      "severity": "WARNING",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["deletes-files", "irreversible"],
+    "reversible": "no",
+    "severity": "ERROR"
+  }
+}
