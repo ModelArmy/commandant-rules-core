@@ -1,191 +1,200 @@
 {
-    "tool": "cat",
-    "tool_summary": "Display file contents or concatenate files to standard output.",
-    "platform": "posix",
-    "platform_notes": "POSIX cat is straightforward and well-standardized. GNU coreutils adds GNU-only flags (--chdir, --files0-from, --null/-z, --output-delimiter, --ignore-dup-separator) and GNU long-option abbreviations (e.g. --number-all, --squeeze-blank) that are not POSIX and not available on macOS (BSD cat).",
-    "llm_confidence": "high",
-    "unknown_flags": [
-        "--chdir",
-        "--files0-from",
-        "--ignore-dup-separator",
-        "--null",
-        "--output-delimiter"
-    ],
-    "is_multiplexer": false,
-    "option_abbreviations": {
-        "--num": "--number-all",
-        "--num-nonblank": "--number-nonblank",
-        "--squee": "--squeeze-blank",
-        "--show-e": "--show-ends",
-        "--show-t": "--show-tabs",
-        "--show-n": "--show-nonprinting"
-    },
-    "rules": [
+  "tool": "cat",
+  "tool_summary": "Display file contents or concatenate files to standard output.",
+  "platform": "posix",
+  "platform_notes": "POSIX cat is straightforward and well-standardized. GNU coreutils adds GNU-only flags (--chdir, --files0-from, --null/-z, --output-delimiter, --ignore-dup-separator) and GNU long-option abbreviations (e.g. --number-all, --squeeze-blank) that are not POSIX and not available on macOS (BSD cat).",
+  "llm_confidence": "high",
+  "unknown_flags": [
+    "--chdir",
+    "--files0-from",
+    "--ignore-dup-separator",
+    "--null",
+    "--output-delimiter"
+  ],
+  "is_multiplexer": false,
+  "option_abbreviations": {
+    "--num": "--number-all",
+    "--num-nonblank": "--number-nonblank",
+    "--squee": "--squeeze-blank",
+    "--show-e": "--show-ends",
+    "--show-t": "--show-tabs",
+    "--show-n": "--show-nonprinting"
+  },
+  "rules": [
+    {
+      "id": "cat-output-overwrite",
+      "description": "Shell output redirection with > truncates the target file, permanently overwriting its content.",
+      "patterns": [
         {
-            "id": "cat-output-overwrite",
-            "description": "Shell output redirection with > truncates the target file, permanently overwriting its content.",
-            "patterns": [
-                {
-                    "pattern": "cat > ...",
-                    "pattern_type": "pipe",
-                    "example": "cat > outfile.txt",
-                    "match": {
-                        "raw_pattern": "cat\\s*>\\s*"
-                    }
-                },
-                {
-                    "pattern": "cat ... > ...",
-                    "pattern_type": "pipe",
-                    "example": "cat infile.txt > outfile.txt",
-                    "match": {
-                        "raw_pattern": "cat.*?>\\s*"
-                    }
-                }
-            ],
-            "risk_tags": [
-                "writes-files",
-                "irreversible"
-            ],
-            "reversible": "no",
-            "severity": "ERROR",
-            "likely_consequences": [
-                "data-loss",
-                "data-corruption"
-            ]
+          "pattern": "cat > ...",
+          "pattern_type": "pipe",
+          "example": "cat > outfile.txt",
+          "match": {
+            "raw_pattern": "cat\\s*>\\s*"
+          }
         },
         {
-            "id": "cat-output-append",
-            "description": "Shell output redirection with >> appends cat's output to the target file. This is generally recoverable if the file structure tolerates additional content.",
-            "patterns": [
-                {
-                    "pattern": "cat >> ...",
-                    "pattern_type": "pipe",
-                    "example": "cat >> outfile.txt",
-                    "match": {
-                        "raw_pattern": "cat\\s*>>\\s*"
-                    }
-                },
-                {
-                    "pattern": "cat ... >> ...",
-                    "pattern_type": "pipe",
-                    "example": "cat infile.txt >> outfile.txt",
-                    "match": {
-                        "raw_pattern": "cat.*?>>\\s*"
-                    }
-                }
-            ],
-            "risk_tags": [
-                "writes-files"
-            ],
-            "reversible": "depends",
-            "reversible_note": "Append is recoverable if the file structure tolerates additional content.",
-            "severity": "WARNING",
-            "likely_consequences": [
-                "data-corruption"
-            ]
-        },
-        {
-            "id": "cat-stdin",
-            "description": "Using the - argument causes cat to read from standard input, which can be an injection vector when the input is controlled by a pipeline or agent.",
-            "patterns": [
-                {
-                    "pattern": "cat - ...",
-                    "pattern_type": "argument",
-                    "example": "cat -",
-                    "match": {
-                        "args_any": [
-                            "-"
-                        ]
-                    }
-                }
-            ],
-            "risk_tags": [
-                "reads-files"
-            ],
-            "reversible": "yes",
-            "severity": "WARNING",
-            "likely_consequences": [
-                "privacy-breach"
-            ]
-        },
-        {
-            "id": "cat-format-flags",
-            "description": "POSIX-compliant format and display flags alter how output is rendered (line numbering, nonblank numbering, blank line squeezing, tab/nonprinting markers) but do not expand access scope or change data flow direction. These flags only affect output presentation.",
-            "patterns": [
-                {
-                    "pattern": "cat -n ...",
-                    "pattern_type": "flag",
-                    "example": "cat -n config.txt",
-                    "match": {
-                        "flags_any": [
-                            "-n"
-                        ]
-                    }
-                },
-                {
-                    "pattern": "cat -b ...",
-                    "pattern_type": "flag",
-                    "example": "cat -b file.txt",
-                    "match": {
-                        "flags_any": [
-                            "-b"
-                        ]
-                    }
-                },
-                {
-                    "pattern": "cat -E ...",
-                    "pattern_type": "flag",
-                    "example": "cat -E file.txt",
-                    "match": {
-                        "flags_any": [
-                            "-E"
-                        ]
-                    }
-                },
-                {
-                    "pattern": "cat -T ...",
-                    "pattern_type": "flag",
-                    "example": "cat -T file.txt",
-                    "match": {
-                        "flags_any": [
-                            "-T"
-                        ]
-                    }
-                },
-                {
-                    "pattern": "cat -v ...",
-                    "pattern_type": "flag",
-                    "example": "cat -v file.txt",
-                    "match": {
-                        "flags_any": [
-                            "-v"
-                        ]
-                    }
-                },
-                {
-                    "pattern": "cat -s ...",
-                    "pattern_type": "flag",
-                    "example": "cat -s file.txt",
-                    "match": {
-                        "flags_any": [
-                            "-s"
-                        ]
-                    }
-                }
-            ],
-            "risk_tags": [
-                "reads-files"
-            ],
-            "reversible": "yes",
-            "severity": "INFO",
-            "likely_consequences": []
+          "pattern": "cat ... > ...",
+          "pattern_type": "pipe",
+          "example": "cat infile.txt > outfile.txt",
+          "match": {
+            "raw_pattern": "cat.*?>\\s*"
+          }
         }
-    ],
-    "default_rule": {
-        "risk_tags": [
-            "reads-files"
-        ],
-        "reversible": "yes",
-        "severity": "INFO"
+      ],
+      "risk_tags": [
+        "writes-files",
+        "irreversible"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ]
+    },
+    {
+      "id": "cat-output-append",
+      "description": "Shell output redirection with >> appends cat's output to the target file. This is generally recoverable if the file structure tolerates additional content.",
+      "patterns": [
+        {
+          "pattern": "cat >> ...",
+          "pattern_type": "pipe",
+          "example": "cat >> outfile.txt",
+          "match": {
+            "raw_pattern": "cat\\s*>>\\s*"
+          }
+        },
+        {
+          "pattern": "cat ... >> ...",
+          "pattern_type": "pipe",
+          "example": "cat infile.txt >> outfile.txt",
+          "match": {
+            "raw_pattern": "cat.*?>>\\s*"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Append is recoverable if the file structure tolerates additional content.",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ]
+    },
+    {
+      "id": "cat-stdin",
+      "description": "Using the - argument causes cat to read from standard input, which can be an injection vector when the input is controlled by a pipeline or agent.",
+      "patterns": [
+        {
+          "pattern": "cat - ...",
+          "pattern_type": "argument",
+          "example": "cat -",
+          "match": {
+            "args_any": [
+              "-"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "mitre_attack": [],
+      "notes": "Standard input injection risk depends on the upstream pipeline."
+    },
+    {
+      "id": "cat-format-flags",
+      "description": "POSIX-compliant format and display flags alter how output is rendered (line numbering, nonblank numbering, blank line squeezing, tab/nonprinting markers) but do not expand access scope or change data flow direction. These flags only affect output presentation.",
+      "patterns": [
+        {
+          "pattern": "cat -n ...",
+          "pattern_type": "flag",
+          "example": "cat -n config.txt",
+          "match": {
+            "flags_any": [
+              "-n"
+            ]
+          }
+        },
+        {
+          "pattern": "cat -b ...",
+          "pattern_type": "flag",
+          "example": "cat -b file.txt",
+          "match": {
+            "flags_any": [
+              "-b"
+            ]
+          }
+        },
+        {
+          "pattern": "cat -E ...",
+          "pattern_type": "flag",
+          "example": "cat -E file.txt",
+          "match": {
+            "flags_any": [
+              "-E"
+            ]
+          }
+        },
+        {
+          "pattern": "cat -T ...",
+          "pattern_type": "flag",
+          "example": "cat -T file.txt",
+          "match": {
+            "flags_any": [
+              "-T"
+            ]
+          }
+        },
+        {
+          "pattern": "cat -v ...",
+          "pattern_type": "flag",
+          "example": "cat -v file.txt",
+          "match": {
+            "flags_any": [
+              "-v"
+            ]
+          }
+        },
+        {
+          "pattern": "cat -s ...",
+          "pattern_type": "flag",
+          "example": "cat -s file.txt",
+          "match": {
+            "flags_any": [
+              "-s"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "mitre_attack": []
     }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
 }

@@ -40,7 +40,11 @@
       "severity": "WARNING",
       "likely_consequences": [
         "unsafe-code-execution"
-      ]
+      ],
+      "mitre_attack": [
+        "T1059.004"
+      ],
+      "notes": "T1059.004 applies only when the confirmed command invokes a shell; the -ok flag itself only gates execution."
     },
     {
       "id": "find-executes-code",
@@ -85,6 +89,11 @@
       "severity": "ERROR",
       "likely_consequences": [
         "unsafe-code-execution"
+      ],
+      "mitre_attack": [
+        "T1059.004",
+        "T1005",
+        "T1485"
       ]
     },
     {
@@ -111,6 +120,9 @@
       "severity": "ERROR",
       "likely_consequences": [
         "unsafe-code-execution"
+      ],
+      "mitre_attack": [
+        "T1059.004"
       ]
     },
     {
@@ -148,6 +160,9 @@
       "severity": "ERROR",
       "likely_consequences": [
         "data-loss"
+      ],
+      "mitre_attack": [
+        "T1485"
       ]
     },
     {
@@ -183,6 +198,9 @@
       "severity": "WARNING",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083"
       ]
     },
     {
@@ -205,7 +223,10 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": []
+      "likely_consequences": [],
+      "mitre_attack": [
+        "T1083"
+      ]
     },
     {
       "id": "find-pipe-xargs",
@@ -238,7 +259,10 @@
       "likely_consequences": [
         "unsafe-code-execution"
       ],
-      "notes": "data-loss is possible when xargs is paired with destructive commands such as rm, but cannot be inferred from the pipe pattern alone."
+      "notes": "data-loss is possible when xargs is paired with destructive commands such as rm, but cannot be inferred from the pipe pattern alone.",
+      "mitre_attack": [
+        "T1059.004"
+      ]
     },
     {
       "id": "find-subshell-input",
@@ -269,6 +293,9 @@
       "severity": "WARNING",
       "likely_consequences": [
         "unsafe-code-execution"
+      ],
+      "mitre_attack": [
+        "T1059.004"
       ]
     },
     {
@@ -303,6 +330,9 @@
       "severity": "INFO",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1005"
       ]
     },
     {
@@ -333,6 +363,10 @@
       "severity": "INFO",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1005",
+        "T1074.001"
       ]
     },
     {
@@ -355,7 +389,8 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": []
+      "likely_consequences": [],
+      "mitre_attack": []
     }
   ]
 }
