@@ -120,6 +120,30 @@ A `posix` ruleset must contain only flags and behaviors valid on both GNU and BS
 
 For `cat`, `ls`, `find`, `grep`, `sed`, `awk`, `curl`, `git` — `high` is expected. Lower confidence on these tools signals output warrants extra scrutiny.
 
+### MITRE ATT&CK
+
+`mitre_attack` is required on every rule. Use an empty array `[]` when no technique applies — do not omit the field.
+
+Identify applicable techniques from your knowledge of what the matched command does. No external data source is needed. Use sub-technique IDs (e.g. `T1059.004`) when the behaviour maps to a specific sub-technique; use the parent (e.g. `T1059`) only when no sub-technique fits.
+
+Common mappings for shell tool rules:
+
+| Pattern                                               | Technique                                    |
+|-------------------------------------------------------|----------------------------------------------|
+| Recursive file deletion (`rm -rf`, `find -delete`)    | T1485 Data Destruction                       |
+| Shell execution via exec flag (`find -exec`, `xargs`) | T1059.004 Unix Shell                         |
+| Subshell or inline code execution (`$()`, backticks)  | T1059.004 Unix Shell                         |
+| Script file execution (`sed -f`, `awk -f`)            | T1059.004 Unix Shell                         |
+| Outbound network connection (`curl`, `wget`)          | T1105 Ingress Tool Transfer                  |
+| Pipeline exfiltration (`grep … | curl`)               | T1048 Exfiltration Over Alternative Protocol |
+| In-place file modification (`sed -i` no backup)       | T1565.001 Stored Data Manipulation           |
+| Privilege escalation (`sudo`, setuid)                 | T1548 Abuse Elevation Control Mechanism      |
+| Environment modification (PATH, env vars)             | T1574 Hijack Execution Flow                  |
+| Recursive directory traversal revealing structure     | T1083 File and Directory Discovery           |
+| File content reading (sensitive file access)          | T1005 Data from Local System                 |
+
+Apply this test before adding a technique: does the matched command directly perform this technique, or does it only make the technique easier for a subsequent action? If a subsequent actor or decision is required, omit the technique from this rule.
+
 ### Multiplexer Tools
 
 If the tool dispatches to subcommands (busybox, toybox): set `is_multiplexer: true`. The ruleset covers dispatch behavior only — each subcommand needs its own ruleset.
@@ -131,6 +155,7 @@ Calibration reference. Note:
 - `match` and `pattern` both populated on every pattern
 - `reversible: "depends"` only on the script-file rule where write-or-not depends on script content
 - Read-only operations use `reversible: "yes"` not `"depends"`
+- `mitre_attack` present on every rule; empty array `[]` on rules with no applicable technique
 
 ```json
 {
@@ -159,6 +184,7 @@ Calibration reference. Note:
       ],
       "risk_tags": ["writes-files", "irreversible"],
       "likely_consequences": ["data-loss", "data-corruption"],
+      "mitre_attack": ["T1565.001", "T1485"],
       "reversible": "no",
       "severity": "ERROR",
       "all_match": false,
@@ -180,6 +206,7 @@ Calibration reference. Note:
       ],
       "risk_tags": ["writes-files"],
       "likely_consequences": ["data-corruption"],
+      "mitre_attack": ["T1565.001"],
       "reversible": "yes",
       "severity": "WARNING",
       "all_match": false
@@ -199,6 +226,7 @@ Calibration reference. Note:
       ],
       "risk_tags": ["reads-files", "executes-code"],
       "likely_consequences": ["unsafe-code-execution"],
+      "mitre_attack": ["T1059.004"],
       "reversible": "depends",
       "reversible_note": "Depends on script file contents — may contain -i (in-place edit) or deletion commands.",
       "severity": "WARNING",
@@ -219,6 +247,7 @@ Calibration reference. Note:
       ],
       "risk_tags": ["executes-code", "subshell"],
       "likely_consequences": ["unsafe-code-execution"],
+      "mitre_attack": ["T1059.004"],
       "reversible": "depends",
       "reversible_note": "Depends on what the subshell executes.",
       "severity": "ERROR",

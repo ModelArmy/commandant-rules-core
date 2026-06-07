@@ -83,7 +83,8 @@
             "patterns",
             "risk_tags",
             "reversible",
-            "severity"
+            "severity",
+            "mitre_attack"
           ],
           "additionalProperties": false,
           "properties": {
@@ -136,7 +137,7 @@
                     "properties": {
                       "flags_any": {
                         "type": "array",
-                        "description": "Rule fires if any of these flags are present in the parsed command. Values are matched as exact strings — not regex. For flags that accept a value (e.g. --color=always), enumerate each variant explicitly (--color=always, --color=never, --color=auto) or use raw_pattern.",
+                        "description": "Rule fires if any of these flags are present in the parsed command. Values are matched as exact strings \u2014 not regex. For flags that accept a value (e.g. --color=always), enumerate each variant explicitly (--color=always, --color=never, --color=auto) or use raw_pattern.",
                         "items": {
                           "type": "string"
                         }
@@ -150,14 +151,14 @@
                       },
                       "args_any": {
                         "type": "array",
-                        "description": "Rule fires if any of these values appear in the parsed arguments. Values are matched as exact strings — not regex. Do not use regex syntax here; use raw_pattern for regex matching.",
+                        "description": "Rule fires if any of these values appear in the parsed arguments. Values are matched as exact strings \u2014 not regex. Do not use regex syntax here; use raw_pattern for regex matching.",
                         "items": {
                           "type": "string"
                         }
                       },
                       "args_none": {
                         "type": "array",
-                        "description": "Rule fires only if NONE of these values appear in the parsed arguments. Values are matched as exact strings — not regex. Use for 'flag present but specific argument absent' patterns.",
+                        "description": "Rule fires only if NONE of these values appear in the parsed arguments. Values are matched as exact strings \u2014 not regex. Use for 'flag present but specific argument absent' patterns.",
                         "items": {
                           "type": "string"
                         }
@@ -199,7 +200,7 @@
                 "no",
                 "depends"
               ],
-              "description": "Whether the effect of this command can be undone. Use 'yes' for read-only operations — even when the output reveals sensitive content. Use 'no' when the effect is permanently destructive. Use 'depends' only when the same flag may or may not produce a write depending on argument values (e.g. a script-file flag whose script may or may not contain in-place edits). 'depends' requires a reversible_note and must not be used for read-only operations."
+              "description": "Whether the effect of this command can be undone. Use 'yes' for read-only operations \u2014 even when the output reveals sensitive content. Use 'no' when the effect is permanently destructive. Use 'depends' only when the same flag may or may not produce a write depending on argument values (e.g. a script-file flag whose script may or may not contain in-place edits). 'depends' requires a reversible_note and must not be used for read-only operations."
             },
             "reversible_note": {
               "type": "string",
@@ -217,7 +218,7 @@
             "all_match": {
               "type": "boolean",
               "default": false,
-              "description": "Controls OR vs AND logic across this rule's patterns. Default false (OR): the rule fires if any single pattern matches. True (AND): ALL patterns must match simultaneously — correct only when the rule genuinely requires two independent patterns to co-fire. Do not set true merely because a rule covers a flag combination; use flags_all within the pattern instead. A rule with multiple patterns each using flags_all internally should almost always leave all_match at its default false."
+              "description": "Controls OR vs AND logic across this rule's patterns. Default false (OR): the rule fires if any single pattern matches. True (AND): ALL patterns must match simultaneously \u2014 correct only when the rule genuinely requires two independent patterns to co-fire. Do not set true merely because a rule covers a flag combination; use flags_all within the pattern instead. A rule with multiple patterns each using flags_all internally should almost always leave all_match at its default false."
             },
             "notes": {
               "type": "string",
@@ -238,6 +239,14 @@
                   "legal-violation",
                   "harmful-decision"
                 ]
+              }
+            },
+            "mitre_attack": {
+              "type": "array",
+              "description": "Required. MITRE ATT&CK technique IDs applicable to this rule. Use an empty array when no technique applies. Format: T#### or T####.### for sub-techniques. E.g. [\"T1059.004\", \"T1485\"]. Populated from LLM knowledge of what the matched command does \u2014 no external data source required.",
+              "items": {
+                "type": "string",
+                "pattern": "^T\\d{4}(\\.\\d{3})?$"
               }
             }
           },

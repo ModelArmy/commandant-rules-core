@@ -40,6 +40,7 @@ For each flag or combination, ask:
 - Does this make the operation irreversible?
 - Does this invoke another binary or spawn a subshell?
 - Does this escalate privilege or modify environment?
+- Which MITRE ATT&CK technique does this directly perform? (Consult the mapping table in the prompt; use `[]` if none applies.)
 
 Every flag or combination that meaningfully changes the risk profile needs its own rule. Combinations that together produce a risk not present in either flag alone need a dedicated rule — use `flags_all` within a pattern to require multiple flags to be co-present. `all_match: true` on the rule is different: it requires ALL patterns in the rule to fire simultaneously. This is rarely correct — use it only when the rule genuinely needs two independent patterns to both match at the same time. When a rule has multiple patterns each encoding a flag combination via `flags_all`, leave `all_match` at its default (false) so any one pattern fires the rule.
 
@@ -114,6 +115,7 @@ Before producing the final JSON, verify:
 - [ ] **Exact strings in `match` fields**: do any values in `flags_any`, `flags_all`, `args_any`, or `args_none` contain regex syntax? If so, move the regex to `raw_pattern` and replace the match field value with the exact string a parser would produce.
 - [ ] **`pattern_type` accuracy**: do any patterns use `flag` for a shell operator (redirection, pipe) or positional argument? Shell operators are `pipe`; positional arguments like `-` are `argument`.
 - [ ] **Platform scope of rules**: if `platform` is `posix`, do any rules reference flags that are GNU-only or BSD-only? If so, either restrict the platform field or move those flags to `unknown_flags`.
+- [ ] **`mitre_attack` coverage**: is the field present on every rule (including those with `[]`)? For each non-empty entry, does the matched command *directly* perform that technique, or does it only assist a subsequent action? Remove any technique that requires a separate actor or decision to materialise.
 
 ---
 
