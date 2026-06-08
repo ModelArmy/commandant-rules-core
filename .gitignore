@@ -14,6 +14,7 @@ enkaidu.yml
 CLAUDE.md
 .deleted_files/
 .spectator-failures
+dist
 
 # This project defines Enkaidu macros and prompts
 # So we're not ignoring .enkaidu/
