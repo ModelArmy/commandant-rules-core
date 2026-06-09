@@ -46,6 +46,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
+      ],
       "notes": "-r follows symlinks but -R additionally dereferences them. Both traverse directory trees recursively."
     },
     {
@@ -82,6 +86,9 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1005"
+      ],
       "notes": "Default grep behavior skips binary files. This flag overrides that protection."
     },
     {
@@ -106,6 +113,9 @@
       "severity": "WARNING",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1005"
       ],
       "notes": "The pattern file itself is read as input. Each pattern inside is applied as regex (or fixed string with -F), potentially matching sensitive content."
     },
@@ -144,6 +154,10 @@
       "severity": "WARNING",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
       ],
       "notes": "Both -r/-R and -v must be present. Order is flexible."
     },
@@ -227,6 +241,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
+      ],
       "notes": "-A (after), -B (before), and -C (context, equals -A -B combined) each accept a numeric argument. Requires recursive flag for meaningful risk."
     },
     {
@@ -264,6 +282,9 @@
       "severity": "WARNING",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083"
       ],
       "notes": "Lists only filenames that contain at least one match. Combined with recursive, reveals the file structure of the search tree through which files match."
     },
@@ -303,7 +324,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
-      "notes": "Opposite of -l. Reveals files that don't match the pattern. Can be used to enumerate file structure."
+      "mitre_attack": [
+        "T1083"
+      ],
+      "notes": "Opposite of -l. Reveals files that not match the pattern. Can be used to enumerate file structure."
     },
     {
       "id": "grep-quiet-recursive",
@@ -383,8 +407,11 @@
       "reversible": "yes",
       "severity": "WARNING",
       "likely_consequences": [
-        "privacy-breach",
-        "computer-security-compromise"
+        "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
       ],
       "notes": "-q, --quiet, and --silent suppress all output. The recursive read still occurs; only output is prevented. Often used for covert verification."
     },
@@ -431,9 +458,13 @@
         "recursive"
       ],
       "reversible": "yes",
-      "severity": "INFO",
+      "severity": "WARNING",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
       ],
       "notes": "-c and --count. Shows line counts per file. Combined with recursive, reveals which files in the tree contain matches."
     },
@@ -484,6 +515,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
+      ],
       "notes": "-z and --null-data are equivalent. Without -r/-R the standalone null-data rule applies. This rule covers the expanded binary read scope of null-delimited search across directory trees."
     },
     {
@@ -509,6 +544,9 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1005"
+      ],
       "notes": "--devices=read makes grep read device files as regular files. --devices=skip explicitly prevents this behavior."
     },
     {
@@ -529,7 +567,7 @@
         {
           "pattern": "grep ... -R ... -o ...",
           "pattern_type": "flag-argument-combination",
-          "example": "grep -R -o 'password=\\S+' .",
+          "example": "grep -R -o 'password=\\\\S+' .",
           "match": {
             "flags_all": [
               "-o",
@@ -546,6 +584,10 @@
       "severity": "ERROR",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
       ],
       "notes": "-o with recursive search extracts only matched text, producing clean output ideal for exfiltration."
     },
@@ -584,6 +626,10 @@
       "severity": "ERROR",
       "likely_consequences": [
         "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083",
+        "T1005"
       ],
       "notes": "Both -r/-R and -f must be present. The pattern file itself is also read as input."
     },
@@ -639,89 +685,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Default --directories=read makes grep treat directory arguments as files, listing their entries. This is primarily a file enumeration risk. Combined with -r/-R it traverses all subdirectories. --directories=skip prevents this. --directories=recurse is equivalent to -r."
-    },
-    {
-      "id": "grep-include-exclude-recursive",
-      "description": "Combined --include or --exclude flags with recursive search create highly targeted reads that can systematically enumerate and read specific file types across entire directory trees. This is the most dangerous variation of targeted file filtering.",
-      "patterns": [
-        {
-          "pattern": "grep ... --include ... -r ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep --include '*.pem' -r /etc/",
-          "match": {
-            "flags_all": [
-              "--include",
-              "-r"
-            ]
-          }
-        },
-        {
-          "pattern": "grep ... -R ... --include ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep -R --include '*.env' .",
-          "match": {
-            "flags_all": [
-              "--include",
-              "-R"
-            ]
-          }
-        },
-        {
-          "pattern": "grep ... --exclude ... -r ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep --exclude '*.log' -r /var/",
-          "match": {
-            "flags_all": [
-              "--exclude",
-              "-r"
-            ]
-          }
-        },
-        {
-          "pattern": "grep ... -R ... --exclude ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep -R --exclude '*.tmp' .",
-          "match": {
-            "flags_all": [
-              "--exclude",
-              "-R"
-            ]
-          }
-        },
-        {
-          "pattern": "grep ... --exclude-dir ... -r ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep --exclude-dir 'node_modules' -r /app/",
-          "match": {
-            "flags_all": [
-              "--exclude-dir",
-              "-r"
-            ]
-          }
-        },
-        {
-          "pattern": "grep ... --exclude-dir ... -R ...",
-          "pattern_type": "flag-argument-combination",
-          "example": "grep --exclude-dir 'vendor' -R .",
-          "match": {
-            "flags_all": [
-              "--exclude-dir",
-              "-R"
-            ]
-          }
-        }
-      ],
-      "risk_tags": [
-        "reads-files",
-        "recursive"
-      ],
-      "reversible": "yes",
-      "severity": "WARNING",
-      "likely_consequences": [
-        "privacy-breach"
-      ],
-      "notes": "--include narrows to matching file names; --exclude and --exclude-dir remove files or directories from the search set. These filter flags are most impactful when combined with recursive search. Without -r/-R, the standalone --include/--exclude/--exclude-dir flags are less risky and fall to the default rule."
     },
     {
       "id": "grep-quiet",
@@ -746,6 +713,7 @@
       "reversible": "yes",
       "severity": "INFO",
       "likely_consequences": [],
+      "mitre_attack": [],
       "notes": "-q, --quiet, --silent. Without recursive, only reads the explicitly specified files."
     },
     {
@@ -769,7 +737,10 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": []
+      "likely_consequences": [],
+      "mitre_attack": [
+        "T1005"
+      ]
     },
     {
       "id": "grep-color",
@@ -794,7 +765,8 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": []
+      "likely_consequences": [],
+      "mitre_attack": []
     },
     {
       "id": "grep-no-messages",
@@ -817,7 +789,8 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": []
+      "likely_consequences": [],
+      "mitre_attack": []
     }
   ],
   "default_rule": {
