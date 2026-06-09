@@ -4,7 +4,9 @@
   "platform": "posix",
   "platform_notes": "The -r and -R flags are functionally equivalent in POSIX for recursive removal. The -d flag is available in POSIX to remove empty directories, acting similarly to rmdir.",
   "llm_confidence": "high",
-  "unknown_flags": [],
+  "unknown_flags": [
+    "--no-preserve-root"
+  ],
   "is_multiplexer": false,
   "option_abbreviations": {},
   "rules": [
@@ -17,7 +19,10 @@
           "pattern_type": "flag-argument-combination",
           "example": "rm -rf /home/user/old_project",
           "match": {
-            "flags_all": ["-r", "-f"]
+            "flags_all": [
+              "-r",
+              "-f"
+            ]
           }
         },
         {
@@ -25,15 +30,28 @@
           "pattern_type": "flag-argument-combination",
           "example": "rm -fr /tmp/logs",
           "match": {
-            "flags_all": ["-r", "-f"]
+            "flags_all": [
+              "-r",
+              "-f"
+            ]
           }
         }
       ],
-      "risk_tags": ["deletes-files", "recursive", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "recursive",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1485"
+      ],
+      "notes": "Flag --no-preserve-root is an escalation vector on GNU systems."
     },
     {
       "id": "rm-recursive",
@@ -44,7 +62,9 @@
           "pattern_type": "flag",
           "example": "rm -r directory/",
           "match": {
-            "flags_any": ["-r"]
+            "flags_any": [
+              "-r"
+            ]
           }
         },
         {
@@ -52,15 +72,26 @@
           "pattern_type": "flag",
           "example": "rm -R directory/",
           "match": {
-            "flags_any": ["-R"]
+            "flags_any": [
+              "-R"
+            ]
           }
         }
       ],
-      "risk_tags": ["deletes-files", "recursive", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "recursive",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "rm-force",
@@ -71,15 +102,25 @@
           "pattern_type": "flag",
           "example": "rm -f file.txt",
           "match": {
-            "flags_any": ["-f"]
+            "flags_any": [
+              "-f"
+            ]
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "rm-interactive",
@@ -90,15 +131,23 @@
           "pattern_type": "flag",
           "example": "rm -i file.txt",
           "match": {
-            "flags_any": ["-i"]
+            "flags_any": [
+              "-i"
+            ]
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
-      "severity": "WARNING",
-      "all_match": false
+      "severity": "INFO",
+      "all_match": false,
+      "mitre_attack": []
     },
     {
       "id": "rm-empty-dir",
@@ -109,19 +158,30 @@
           "pattern_type": "flag",
           "example": "rm -d empty_folder/",
           "match": {
-            "flags_any": ["-d"]
+            "flags_any": [
+              "-d"
+            ]
           }
         }
       ],
-      "risk_tags": ["deletes-files", "irreversible"],
-      "likely_consequences": ["data-loss"],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
       "reversible": "no",
       "severity": "WARNING",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": []
     }
   ],
   "default_rule": {
-    "risk_tags": ["deletes-files", "irreversible"],
+    "risk_tags": [
+      "deletes-files",
+      "irreversible"
+    ],
     "reversible": "no",
     "severity": "ERROR"
   }
