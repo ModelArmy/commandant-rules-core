@@ -32,7 +32,10 @@
       "reversible_note": "Depends on the commands executed by the shell.",
       "severity": "ERROR",
       "all_match": false,
-      "notes": "The presence of a shell allows for command injection if input is untrusted."
+      "notes": "The presence of a shell allows for command injection if input is untrusted.",
+      "mitre_attack": [
+        "T1059.004"
+      ]
     },
     {
       "id": "xargs-parallel-execution",
@@ -56,7 +59,8 @@
       "reversible_note": "The reversibility depends on the command executed by xargs, not the parallel execution flag itself.",
       "severity": "WARNING",
       "all_match": false,
-      "notes": "While not destructive to files, excessive parallelism can lead to Denial of Service."
+      "notes": "While not destructive to files, excessive parallelism can lead to Denial of Service.",
+      "mitre_attack": []
     },
     {
       "id": "xargs-arg-file",
@@ -81,7 +85,8 @@
       "reversible_note": "The reversibility depends on the command executed by xargs, not the source of the arguments.",
       "severity": "WARNING",
       "all_match": false,
-      "notes": "Changes the input source; risk depends on the commanded tool."
+      "notes": "Changes the input source; risk depends on the commanded tool.",
+      "mitre_attack": []
     },
     {
       "id": "xargs-null-delimiter",
@@ -104,7 +109,8 @@
       "reversible": "yes",
       "severity": "INFO",
       "all_match": false,
-      "notes": "Signals intent to process bulk filenames with special characters via a pipeline."
+      "notes": "Signals intent to process bulk filenames with special characters via a pipeline.",
+      "mitre_attack": []
     },
     {
       "id": "xargs-replace",
@@ -128,7 +134,8 @@
       "reversible_note": "The reversibility depends on the command executed by xargs.",
       "severity": "WARNING",
       "all_match": false,
-      "notes": "Precise injection of input into arbitrary command positions can lead to unsafe execution if input is not sanitized."
+      "notes": "Precise injection of input into arbitrary command positions can lead to unsafe execution if input is not sanitized. Threat depends on the executed command.",
+      "mitre_attack": []
     }
   ],
   "default_rule": {

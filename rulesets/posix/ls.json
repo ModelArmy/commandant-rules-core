@@ -45,6 +45,9 @@
         "privacy-breach"
       ],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Worst-case read expansion: recursive traversal combined with symlink following can expose file structure and metadata across a wide area. Higher priority than ls-recursive or ls-dereference individually."
     },
     {
@@ -83,7 +86,10 @@
       "likely_consequences": [
         "privacy-breach"
       ],
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ]
     },
     {
       "id": "ls-recursive",
@@ -122,6 +128,9 @@
         "privacy-breach"
       ],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Expands the scope of file read operations from the invocation directory to all descendant paths. Combined with -L, see ls-recursive-dereference."
     },
     {
@@ -147,6 +156,9 @@
       "severity": "INFO",
       "likely_consequences": [],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Information exposure only - does not expand file access scope beyond permission constraints. Combined with -R, see ls-recursive-dereference."
     },
     {
@@ -174,6 +186,10 @@
         "privacy-breach"
       ],
       "all_match": false,
+      "mitre_attack": [
+        "T1083",
+        "T1005"
+      ],
       "notes": "Output format change - does not expand file access scope beyond what the user can already read. Combined with -Z, see ls-long-context."
     },
     {
@@ -210,6 +226,9 @@
       "severity": "INFO",
       "likely_consequences": [],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Output format change only - does not expand file access scope. Combined with -R, adds metadata exposure to recursive traversal."
     },
     {
@@ -248,6 +267,9 @@
         "privacy-breach"
       ],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Reveals hidden files without expanding file access scope beyond normal directory listing permissions. Combined with -R, see ls-recursive-all."
     },
     {
@@ -273,6 +295,9 @@
       "severity": "INFO",
       "likely_consequences": [],
       "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
       "notes": "Output format change only - does not expand file access scope. Information could be used in a subsequent attack but ls does not directly compromise security. Combined with -l, see ls-long-context."
     }
   ],
