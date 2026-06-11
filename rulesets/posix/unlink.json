@@ -1,0 +1,43 @@
+{
+  "tool": "unlink",
+  "tool_summary": "Removes a file from the filesystem.",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent across GNU and BSD, though system-specific behavior for symlinks may vary.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "unlink-deletes-file",
+      "description": "Removes the file specified by the positional argument. This action is permanent and irreversible without backups.",
+      "patterns": [
+        {
+          "pattern": "unlink ...",
+          "pattern_type": "argument",
+          "example": "unlink myfile.txt",
+          "match": {
+            "raw_pattern": "unlink\\s+\\S+"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "deletes-files",
+      "irreversible"
+    ],
+    "reversible": "no",
+    "severity": "ERROR"
+  }
+}

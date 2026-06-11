@@ -34,7 +34,10 @@
       "reversible": "depends",
       "reversible_note": "Depends on the command executed by the subshell.",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1059.004"
+      ]
     },
     {
       "id": "jq-arg-file",
@@ -66,7 +69,8 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": []
     },
     {
       "id": "jq-output-append",
@@ -87,7 +91,10 @@
       "reversible": "depends",
       "reversible_note": "Effect depends on whether the target file exists and its existing contents.",
       "severity": "WARNING",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1565.001"
+      ]
     },
     {
       "id": "jq-output-overwrite",
@@ -111,7 +118,10 @@
       ],
       "reversible": "no",
       "severity": "WARNING",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1565.001"
+      ]
     }
   ],
   "default_rule": {

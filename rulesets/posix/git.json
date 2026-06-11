@@ -32,7 +32,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-clean-force",
@@ -70,7 +73,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-push-force",
@@ -99,7 +105,10 @@
         "data-corruption"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-branch-delete-force",
@@ -126,7 +135,10 @@
       ],
       "reversible": "no",
       "severity": "ERROR",
-      "notes": "Branch deletion removes a ref, not files on disk; however, it's treated as file deletion for schema consistency. Commits become unreachable rather than filesystem data being deleted."
+      "notes": "Branch deletion removes a ref, not files on disk; however, it's treated as file deletion for schema consistency. Commits become unreachable rather than filesystem data being deleted.",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-rm-force",
@@ -153,7 +165,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-checkout-force",
@@ -192,7 +207,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-config-global",
@@ -215,7 +233,9 @@
       ],
       "reversible": "depends",
       "reversible_note": "Global config changes persist across all repositories and must be reverted manually.",
-      "severity": "WARNING"
+      "severity": "INFO",
+      "notes": "T1574 (Hijack Execution Flow) applies specifically when the config key controls execution, such as core.gitProxy or credential.helper.",
+      "mitre_attack": []
     },
     {
       "id": "git-config-global-unset",
@@ -250,7 +270,8 @@
         "modifies-environment"
       ],
       "reversible": "yes",
-      "severity": "WARNING"
+      "severity": "INFO",
+      "mitre_attack": []
     },
     {
       "id": "git-clone",
@@ -270,7 +291,10 @@
         "writes-files"
       ],
       "reversible": "yes",
-      "severity": "INFO"
+      "severity": "INFO",
+      "mitre_attack": [
+        "T1105"
+      ]
     },
     {
       "id": "git-push-standard",
@@ -290,11 +314,12 @@
         "writes-files"
       ],
       "reversible": "yes",
-      "severity": "INFO"
+      "severity": "INFO",
+      "mitre_attack": []
     },
     {
-      "id": "git-fetch-pull",
-      "description": "Fetches or pulls data from a remote repository.",
+      "id": "git-fetch",
+      "description": "Fetches data from a remote repository, updating remote-tracking branches.",
       "patterns": [
         {
           "pattern": "git fetch ...",
@@ -303,7 +328,20 @@
           "match": {
             "raw_pattern": "git\\s+fetch\\b"
           }
-        },
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "git-pull",
+      "description": "Fetches and incorporates changes from a remote repository into the working tree.",
+      "patterns": [
         {
           "pattern": "git pull ...",
           "pattern_type": "argument",
@@ -318,7 +356,10 @@
         "reads-files"
       ],
       "reversible": "yes",
-      "severity": "INFO"
+      "severity": "INFO",
+      "mitre_attack": [
+        "T1105"
+      ]
     },
     {
       "id": "git-rebase-interactive",
@@ -345,7 +386,10 @@
         "data-corruption"
       ],
       "reversible": "no",
-      "severity": "WARNING"
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1565.001"
+      ]
     },
     {
       "id": "git-stash-drop",
@@ -368,7 +412,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     },
     {
       "id": "git-stash-clear",
@@ -391,7 +438,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
     }
   ],
   "default_rule": {
