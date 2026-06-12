@@ -25,7 +25,11 @@
         "network-egress"
       ],
       "reversible": "yes",
-      "severity": "WARNING"
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1105"
+      ],
+      "notes": "This covers remote image fetch, not tool transfer in the ATT&CK sense."
     },
     {
       "id": "convert-delegate-execution",
@@ -47,7 +51,10 @@
         "unsafe-code-execution"
       ],
       "reversible": "yes",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1203"
+      ]
     },
     {
       "id": "convert-intermediate-write",
@@ -72,7 +79,10 @@
         "data-loss"
       ],
       "reversible": "no",
-      "severity": "ERROR"
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1565.001"
+      ]
     },
     {
       "id": "convert-at-file-input",
@@ -92,7 +102,9 @@
         "executes-code"
       ],
       "reversible": "yes",
-      "severity": "WARNING"
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "T1059.004 may apply depending on the content of the file, but reading the file itself is not shell execution."
     }
   ],
   "default_rule": {
