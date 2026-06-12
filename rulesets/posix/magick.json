@@ -34,6 +34,9 @@
       "reversible": "no",
       "severity": "ERROR",
       "all_match": false,
+      "mitre_attack": [
+        "T1485"
+      ],
       "notes": "mogrify is fundamentally destructive as it overwrites the source files. Use 'magick' (convert) to create new files instead."
     },
     {
@@ -55,7 +58,10 @@
       ],
       "reversible": "yes",
       "severity": "WARNING",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1105"
+      ]
     },
     {
       "id": "magick-parameter-file",
@@ -80,6 +86,7 @@
       "reversible": "yes",
       "severity": "WARNING",
       "all_match": false,
+      "mitre_attack": [],
       "notes": "Depending on the content of the parameter file, this can trigger delegates that execute shell commands or read arbitrary files."
     },
     {
@@ -106,7 +113,10 @@
       ],
       "reversible": "no",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1565.001"
+      ]
     }
   ],
   "default_rule": {

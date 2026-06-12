@@ -1,0 +1,41 @@
+{
+  "tool": "diff",
+  "tool_summary": "A command-line utility used to compare two files line by line and display the differences between them.",
+  "platform": "posix",
+  "platform_notes": "GNU diff adds --color, -z (null-delimited input), and --line-format which are not available on BSD diff. No behavioral differences exist for the flags covered in this ruleset. A linux-specific ruleset should be generated if those flags require risk rules.",
+  "llm_confidence": "high",
+  "unknown_flags": ["--color", "-z", "--line-format"],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "diff-recursive-discovery",
+      "description": "Recursive directory traversal to compare multiple files/folders, enabling broader file and directory discovery for reconnaissance.",
+      "patterns": [
+        {
+          "pattern": "diff -r ...",
+          "pattern_type": "flag",
+          "example": "diff -r dir1 dir2",
+          "match": {
+            "flags_any": ["-r", "--recursive"]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": ["privacy-breach"],
+      "mitre_attack": ["T1083"]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}

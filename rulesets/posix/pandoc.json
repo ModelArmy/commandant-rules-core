@@ -52,7 +52,10 @@
       "reversible": "depends",
       "reversible_note": "Reversibility depends on the actions taken by the executed filter script.",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1059.004"
+      ]
     },
     {
       "id": "pandoc-engine-execution",
@@ -78,7 +81,8 @@
       "reversible": "depends",
       "reversible_note": "Reversibility depends on the actions taken by the executed binary.",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": []
     },
     {
       "id": "pandoc-output",
@@ -115,7 +119,10 @@
       ],
       "reversible": "no",
       "severity": "ERROR",
-      "all_match": false
+      "all_match": false,
+      "mitre_attack": [
+        "T1565.001"
+      ]
     },
     {
       "id": "pandoc-media-extraction",
@@ -138,7 +145,10 @@
       "reversible": "no",
       "severity": "WARNING",
       "all_match": false,
-      "notes": "While primarily used for legitimate media extraction, it allows Pandoc to write multiple files to a specified directory."
+      "notes": "While primarily used for legitimate media extraction, it allows Pandoc to write multiple files to a specified directory.",
+      "mitre_attack": [
+        "T1565.001"
+      ]
     }
   ],
   "default_rule": {

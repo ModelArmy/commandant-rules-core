@@ -124,7 +124,7 @@
     },
     {
       "id": "rm-interactive",
-      "description": "The -i flag prompts the user for confirmation before every removal, reducing the risk of accidental deletion.",
+      "description": "The -i flag prompts the user for confirmation before every removal, reducing the risk of accidental deletion. Note: Once confirmed, the deletion is still permanent.",
       "patterns": [
         {
           "pattern": "rm -i ...",
@@ -140,9 +140,6 @@
       "risk_tags": [
         "deletes-files",
         "irreversible"
-      ],
-      "likely_consequences": [
-        "data-loss"
       ],
       "reversible": "no",
       "severity": "INFO",
