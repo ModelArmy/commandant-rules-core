@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  package:
+    name: Build ruleset bundle
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required to create a GitHub release and upload assets
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for git describe
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false # bundler/inline manages its own gem installation
+
+      - name: Build bundle
+        run: |
+          scripts/package.rb \
+            --min-engine-version "0.5.1" \
+            --attack-version "ATT&CK-v16.1" \
+            --output-dir dist/
+
+      - name: Verify bundle checksum
+        run: |
+          cd dist/
+          sha256sum --check "commandant-rules-${GITHUB_REF_NAME}.zip.sha256"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/commandant-rules-${{ github.ref_name }}.zip
+            dist/commandant-rules-${{ github.ref_name }}.zip.sha256
+          generate_release_notes: true
