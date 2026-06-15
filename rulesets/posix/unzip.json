@@ -1,0 +1,78 @@
+{
+  "tool": "unzip",
+  "tool_summary": "Extracts files from a ZIP archive.",
+  "platform": "posix",
+  "platform_notes": "The Info-ZIP implementation is standard across most POSIX systems; behavior regarding symlinks and permissions can vary slightly between distribution versions.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "unzip-overwrite",
+      "description": "The -o flag forces the overwrite of existing files without prompting. This can lead to permanent loss of current file versions.",
+      "patterns": [
+        {
+          "pattern": "unzip -o ...",
+          "pattern_type": "flag",
+          "example": "unzip -o archive.zip",
+          "match": {
+            "flags_any": ["-o"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "no",
+      "severity": "ERROR",
+      "all_match": false
+    },
+    {
+      "id": "unzip-restore-permissions",
+      "description": "The -X flag restores original UID/GID and permissions from the archive. If run as a privileged user, this could be used to create setuid binaries or alter system file ownership.",
+      "patterns": [
+        {
+          "pattern": "unzip -X ...",
+          "pattern_type": "flag",
+          "example": "unzip -X archive.zip",
+          "match": {
+            "flags_any": ["-X"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "elevated-privilege"],
+      "likely_consequences": ["computer-security-compromise"],
+      "mitre_attack": ["T1548"],
+      "reversible": "depends",
+      "reversible_note": "Depends on whether the original permissions are known and whether elevated permissions were granted.",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "unzip-list",
+      "description": "The -l flag lists the contents of a ZIP archive without extracting files to the filesystem.",
+      "patterns": [
+        {
+          "pattern": "unzip -l ...",
+          "pattern_type": "flag",
+          "example": "unzip -l archive.zip",
+          "match": {
+            "flags_any": ["-l"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files"],
+      "likely_consequences": [],
+      "mitre_attack": ["T1083"],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files", "writes-files"],
+    "reversible": "depends",
+    "severity": "INFO"
+  }
+}
