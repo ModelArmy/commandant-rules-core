@@ -1,0 +1,111 @@
+{
+  "tool": "zip",
+  "tool_summary": "A utility for archiving and compressing files into a single zip file.",
+  "platform": "posix",
+  "platform_notes": "Standard POSIX behavior; standard across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "zip-move",
+      "description": "The -m or --move flag tells zip to remove the original files after they are added to the archive.",
+      "patterns": [
+        {
+          "pattern": "zip -m ...",
+          "pattern_type": "flag",
+          "example": "zip -m archive.zip file1 file2",
+          "match": {
+            "flags_any": ["-m"]
+          }
+        },
+        {
+          "pattern": "zip --move ...",
+          "pattern_type": "flag",
+          "example": "zip --move archive.zip file1 file2",
+          "match": {
+            "flags_any": ["--move"]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "mitre_attack": [
+        "T1485"
+      ],
+      "reversible": "no",
+      "severity": "ERROR"
+    },
+    {
+      "id": "zip-password-plaintext",
+      "description": "Specifying a password via -P exposes it in plaintext to process listing tools (e.g., ps), creating a security vulnerability.",
+      "patterns": [
+        {
+          "pattern": "zip -P ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "zip -P secret archive.zip file.txt",
+          "match": {
+            "flags_any": ["-P"]
+          }
+        }
+      ],
+      "risk_tags": [
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "mitre_attack": [
+        "T1552.001"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING"
+    },
+    {
+      "id": "zip-recursive",
+      "description": "The -r or --recursive flag tells zip to include directories and their contents recursively.",
+      "patterns": [
+        {
+          "pattern": "zip -r ...",
+          "pattern_type": "flag",
+          "example": "zip -r archive.zip directory/",
+          "match": {
+            "flags_any": ["-r"]
+          }
+        },
+        {
+          "pattern": "zip --recursive ...",
+          "pattern_type": "flag",
+          "example": "zip --recursive archive.zip directory/",
+          "match": {
+            "flags_any": ["--recursive"]
+          }
+        }
+      ],
+      "risk_tags": [
+        "recursive",
+        "reads-files",
+        "writes-files"
+      ],
+      "mitre_attack": [
+        "T1083"
+      ],
+      "reversible": "yes",
+      "severity": "INFO"
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files",
+      "writes-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
