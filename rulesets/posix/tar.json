@@ -1,0 +1,122 @@
+{
+  "tool": "tar",
+  "tool_summary": "A utility used to create, extract, modify, and list archives of files.",
+  "platform": "posix",
+  "platform_notes": "Standard -c, -r, -x, and -t flags are consistent across GNU and BSD tar implementations. Long options (like --create) are GNU-specific extensions and have been removed from this POSIX ruleset to ensure compatibility.",
+  "llm_confidence": "high",
+  "unknown_flags": ["-f", "-v", "-z", "-j", "-p", "-P", "-k", "-C", "-O"],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "tar-extract",
+      "description": "Extracts files from an archive, which can overwrite existing files on the filesystem without warning.",
+      "patterns": [
+        {
+          "pattern": "tar -x ...",
+          "pattern_type": "flag",
+          "example": "tar -xf archive.tar",
+          "match": {
+            "flags_any": ["-x"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible", "reads-files", "recursive"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Reversible unless archive entries collide with existing files at the destination, in which case those files are silently overwritten.",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": " Extraction can overwrite existing system files if run with elevated privileges or via symlink attacks."
+    },
+    {
+      "id": "tar-extract-absolute-paths",
+      "description": "Extracting with -P allows absolute paths or paths starting with / to be preserved, potentially overwriting files outside the current directory.",
+      "patterns": [
+        {
+          "pattern": "tar -x -P ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "tar -xPf archive.tar",
+          "match": {
+            "flags_all": ["-x", "-P"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible", "reads-files", "recursive"],
+      "likely_consequences": ["data-loss", "data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Reversible unless absolute-path entries collide with existing files outside the extraction directory, in which case those files are overwritten.",
+      "severity": "ERROR",
+      "all_match": false,
+      "notes": "Files written outside the extraction directory via absolute paths could be leveraged to compromise system security if the overwritten files are sensitive (e.g. cron jobs, shell profiles)"
+    },
+    {
+      "id": "tar-append",
+      "description": "Appends files to an existing archive, modifying the original file structure.",
+      "patterns": [
+        {
+          "pattern": "tar -r ...",
+          "pattern_type": "flag",
+          "example": "tar -rf archive.tar file3",
+          "match": {
+            "flags_any": ["-r"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files", "irreversible", "reads-files"],
+      "likely_consequences": ["data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Reversible unless an appended entry shares a name with an existing entry, in which case it shadows the original on extraction.",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "tar-create",
+      "description": "Creates a new archive containing specified files. Reads the contents of local files to build the archive.",
+      "patterns": [
+        {
+          "pattern": "tar -c ...",
+          "pattern_type": "flag",
+          "example": "tar -cf archive.tar file1",
+          "match": {
+            "flags_any": ["-c"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files", "writes-files"],
+      "likely_consequences": ["data-loss"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Reversible if the target archive path is new; if it already exists, its prior content is fully overwritten.",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "tar-list",
+      "description": "Lists the contents of an archive without extracting them, revealing the internal file structure.",
+      "patterns": [
+        {
+          "pattern": "tar -t ...",
+          "pattern_type": "flag",
+          "example": "tar -tf archive.tar",
+          "match": {
+            "flags_any": ["-t"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files"],
+      "mitre_attack": ["T1083"],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files"],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
