@@ -1,0 +1,184 @@
+{
+  "tool": "gzip",
+  "tool_summary": "A tool for compressing or expanding files using the Lempel-Ziv coding (LZ77) algorithm.",
+  "platform": "posix",
+  "platform_notes": "Standard POSIX gzip behavior. Most implementations follow GNU gzip specifications.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "gzip-force",
+      "description": "Forces compression even when a destination .gz file already exists, silently overwriting it, and forces compression of multi-link or already-compressed files.",
+      "patterns": [
+        {
+          "pattern": "gzip -f ...",
+          "pattern_type": "flag",
+          "example": "gzip -f file.txt",
+          "match": {
+            "flags_any": ["-f"]
+          }
+        },
+        {
+          "pattern": "gzip --force ...",
+          "pattern_type": "flag",
+          "example": "gzip --force file.txt",
+          "match": {
+            "flags_any": ["--force"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files"],
+      "likely_consequences": ["data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Reversible unless a pre-existing destination .gz file is overwritten, in which case its prior content is lost.",
+      "severity": "WARNING",
+      "all_match": false,
+      "notes": "The -f flag forces the overwrite of existing .gz files and ignores warnings about file links or already-compressed content."
+    },
+    {
+      "id": "gzip-recursive",
+      "description": "Recursively compresses all files in the directory tree. Large scale modifications to the filesystem can be disruptive or accidental.",
+      "patterns": [
+        {
+          "pattern": "gzip -r ...",
+          "pattern_type": "flag",
+          "example": "gzip -r /home/user/docs",
+          "match": {
+            "flags_any": ["-r"]
+          }
+        },
+        {
+          "pattern": "gzip --recursive ...",
+          "pattern_type": "flag",
+          "example": "gzip --recursive /home/user/docs",
+          "match": {
+            "flags_any": ["--recursive"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files", "writes-files", "recursive"],
+      "likely_consequences": ["data-corruption"],
+      "mitre_attack": ["T1565.001"],
+      "reversible": "depends",
+      "reversible_note": "Each file's original is deleted on successful compression, consistent with gzip's default behavior; not recoverable if compression fails partway through the tree.",
+      "severity": "WARNING",
+      "all_match": false
+    },
+    {
+      "id": "gzip-keep",
+      "description": "Keep the original input files after compression, preventing the default behavior of deleting the source file.",
+      "patterns": [
+        {
+          "pattern": "gzip -k ...",
+          "pattern_type": "flag",
+          "example": "gzip -k file.txt",
+          "match": {
+            "flags_any": ["-k"]
+          }
+        },
+        {
+          "pattern": "gzip --keep ...",
+          "pattern_type": "flag",
+          "example": "gzip --keep file.txt",
+          "match": {
+            "flags_any": ["--keep"]
+          }
+        }
+      ],
+      "risk_tags": ["writes-files"],
+      "mitre_attack": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "gzip-decompress",
+      "description": "Decompresses files, typically replacing the .gz file with the uncompressed original.",
+      "patterns": [
+        {
+          "pattern": "gzip -d ...",
+          "pattern_type": "flag",
+          "example": "gzip -d file.txt.gz",
+          "match": {
+            "flags_any": ["-d"]
+          }
+        },
+        {
+          "pattern": "gzip --decompress ...",
+          "pattern_type": "flag",
+          "example": "gzip --decompress file.txt.gz",
+          "match": {
+            "flags_any": ["--decompress"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files", "writes-files"],
+      "mitre_attack": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "gzip-stdout",
+      "description": "Writes compressed output to standard output instead of creating a file, maintaining a read-only relationship with the source files.",
+      "patterns": [
+        {
+          "pattern": "gzip -c ...",
+          "pattern_type": "flag",
+          "example": "gzip -c file.txt > compressed.gz",
+          "match": {
+            "flags_any": ["-c"]
+          }
+        },
+        {
+          "pattern": "gzip --stdout ...",
+          "pattern_type": "flag",
+          "example": "gzip --stdout file.txt > compressed.gz",
+          "match": {
+            "flags_any": ["--stdout"]
+          }
+        }
+      ],
+      "risk_tags": ["reads-files"],
+      "mitre_attack": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    },
+    {
+      "id": "gzip-verbose",
+      "description": "Displays compression ratios and progress. Does not modify access or risk profile.",
+      "patterns": [
+        {
+          "pattern": "gzip -v ...",
+          "pattern_type": "flag",
+          "example": "gzip -v file.txt",
+          "match": {
+            "flags_any": ["-v"]
+          }
+        },
+        {
+          "pattern": "gzip --verbose ...",
+          "pattern_type": "flag",
+          "example": "gzip --verbose file.txt",
+          "match": {
+            "flags_any": ["--verbose"]
+          }
+        }
+      ],
+      "risk_tags": [],
+      "mitre_attack": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": ["reads-files", "writes-files"],
+    "reversible": "depends",
+    "severity": "INFO"
+  }
+}
