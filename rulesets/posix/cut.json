@@ -1,0 +1,40 @@
+{
+  "tool": "cut",
+  "tool_summary": "A command-line utility for removing sections from each line of input files or standard input.",
+  "platform": "posix",
+  "platform_notes": "Valid for both GNU and BSD implementations. No significant behavioral differences regarding risk profiles exist between platforms.",
+  "llm_confidence": "high",
+  "unknown_flags": ["--complement", "-n", "-s", "--output-delimiter", "-z"],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "cut-read-data",
+      "description": "Extracts specific bytes, characters, or fields from input files. This is a read-only operation used to parse or discover data.",
+      "patterns": [
+        {
+          "pattern": "cut ...",
+          "pattern_type": "flag",
+          "example": "cut -f1 input.csv",
+          "match": {
+            "flags_any": ["-b", "-c", "-f"]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": ["T1005"],
+      "all_match": false
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO"
+  }
+}
