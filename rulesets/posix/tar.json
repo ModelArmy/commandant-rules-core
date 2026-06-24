@@ -4,7 +4,17 @@
   "platform": "posix",
   "platform_notes": "Standard -c, -r, -x, and -t flags are consistent across GNU and BSD tar implementations. Long options (like --create) are GNU-specific extensions and have been removed from this POSIX ruleset to ensure compatibility.",
   "llm_confidence": "high",
-  "unknown_flags": ["-f", "-v", "-z", "-j", "-p", "-P", "-k", "-C", "-O"],
+  "unknown_flags": [
+    "-f",
+    "-v",
+    "-z",
+    "-j",
+    "-p",
+    "-P",
+    "-k",
+    "-C",
+    "-O"
+  ],
   "is_multiplexer": false,
   "option_abbreviations": {},
   "rules": [
@@ -17,13 +27,25 @@
           "pattern_type": "flag",
           "example": "tar -xf archive.tar",
           "match": {
-            "flags_any": ["-x"]
+            "flags_any": [
+              "-x"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible", "reads-files", "recursive"],
-      "likely_consequences": ["data-loss", "data-corruption"],
-      "mitre_attack": ["T1565.001"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible",
+        "reads-files",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversible unless archive entries collide with existing files at the destination, in which case those files are silently overwritten.",
       "severity": "WARNING",
@@ -39,13 +61,26 @@
           "pattern_type": "flag-argument-combination",
           "example": "tar -xPf archive.tar",
           "match": {
-            "flags_all": ["-x", "-P"]
+            "flags_all": [
+              "-x",
+              "-P"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible", "reads-files", "recursive"],
-      "likely_consequences": ["data-loss", "data-corruption"],
-      "mitre_attack": ["T1565.001"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible",
+        "reads-files",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversible unless absolute-path entries collide with existing files outside the extraction directory, in which case those files are overwritten.",
       "severity": "ERROR",
@@ -61,13 +96,23 @@
           "pattern_type": "flag",
           "example": "tar -rf archive.tar file3",
           "match": {
-            "flags_any": ["-r"]
+            "flags_any": [
+              "-r"
+            ]
           }
         }
       ],
-      "risk_tags": ["writes-files", "irreversible", "reads-files"],
-      "likely_consequences": ["data-corruption"],
-      "mitre_attack": ["T1565.001"],
+      "risk_tags": [
+        "writes-files",
+        "irreversible",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversible unless an appended entry shares a name with an existing entry, in which case it shadows the original on extraction.",
       "severity": "INFO",
@@ -82,13 +127,22 @@
           "pattern_type": "flag",
           "example": "tar -cf archive.tar file1",
           "match": {
-            "flags_any": ["-c"]
+            "flags_any": [
+              "-c"
+            ]
           }
         }
       ],
-      "risk_tags": ["reads-files", "writes-files"],
-      "likely_consequences": ["data-loss"],
-      "mitre_attack": ["T1565.001"],
+      "risk_tags": [
+        "reads-files",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "mitre_attack": [
+        "T1565.001"
+      ],
       "reversible": "depends",
       "reversible_note": "Reversible if the target archive path is new; if it already exists, its prior content is fully overwritten.",
       "severity": "WARNING",
@@ -103,20 +157,29 @@
           "pattern_type": "flag",
           "example": "tar -tf archive.tar",
           "match": {
-            "flags_any": ["-t"]
+            "flags_any": [
+              "-t"
+            ]
           }
         }
       ],
-      "risk_tags": ["reads-files"],
-      "mitre_attack": ["T1083"],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "mitre_attack": [
+        "T1083"
+      ],
       "reversible": "yes",
       "severity": "INFO",
       "all_match": false
     }
   ],
   "default_rule": {
-    "risk_tags": ["reads-files"],
+    "risk_tags": [
+      "reads-files"
+    ],
     "reversible": "yes",
+    "mitre_attack": [],
     "severity": "INFO"
   }
 }

@@ -27,6 +27,7 @@
         "reads-files",
         "recursive"
       ],
+      "mitre_attack": [],
       "reversible": "yes",
       "severity": "INFO"
     },
@@ -48,6 +49,7 @@
       "risk_tags": [
         "reads-files"
       ],
+      "mitre_attack": [],
       "reversible": "yes",
       "severity": "INFO"
     }
@@ -56,6 +58,7 @@
     "risk_tags": [
       "reads-files"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   }

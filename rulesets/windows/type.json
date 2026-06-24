@@ -24,6 +24,7 @@
       "risk_tags": [
         "reads-files"
       ],
+      "mitre_attack": [],
       "likely_consequences": [
         "privacy-breach"
       ],
@@ -36,6 +37,7 @@
     "risk_tags": [
       "reads-files"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   }

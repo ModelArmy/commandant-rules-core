@@ -385,6 +385,7 @@
     "risk_tags": [
       "reads-files"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   }

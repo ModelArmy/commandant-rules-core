@@ -305,7 +305,8 @@
         "required": [
           "risk_tags",
           "reversible",
-          "severity"
+          "severity",
+          "mitre_attack"
         ],
         "additionalProperties": false,
         "properties": {
@@ -342,6 +343,14 @@
               "WARNING",
               "ERROR"
             ]
+          },
+          "mitre_attack": {
+            "type": "array",
+            "description": "Required. MITRE ATT&CK technique IDs applicable to the tool's baseline (no-flag) invocation. Use an empty array when no technique applies. Same semantics as the per-rule field.",
+            "items": {
+              "type": "string",
+              "pattern": "^T\\d{4}(\\.\\d{3})?$"
+            }
           }
         }
       }
