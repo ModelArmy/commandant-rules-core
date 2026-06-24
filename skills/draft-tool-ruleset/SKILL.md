@@ -101,7 +101,9 @@ Read-only operations are `"yes"` even if output reveals sensitive content. `"dep
 
 ### Step 7 — Write the default rule
 
-Covers the tool when invoked with no risky flags. Lowest-risk baseline state of the tool. No patterns — only `risk_tags`, `reversible`, `severity`.
+Covers the tool when invoked with no risky flags. Lowest-risk baseline state of the tool. No patterns — only `risk_tags`, `reversible`, `severity`, and `mitre_attack`.
+
+`mitre_attack` is required here too. Use `[]` when no technique applies to the bare invocation. The same nil vs [] semantics apply — omitting the field marks the ruleset as pre-backfill for the default case.
 
 ---
 
@@ -115,7 +117,7 @@ Before producing the final JSON, verify:
 - [ ] **Exact strings in `match` fields**: do any values in `flags_any`, `flags_all`, `args_any`, or `args_none` contain regex syntax? If so, move the regex to `raw_pattern` and replace the match field value with the exact string a parser would produce.
 - [ ] **`pattern_type` accuracy**: do any patterns use `flag` for a shell operator (redirection, pipe) or positional argument? Shell operators are `pipe`; positional arguments like `-` are `argument`.
 - [ ] **Platform scope of rules**: if `platform` is `posix`, do any rules reference flags that are GNU-only or BSD-only? If so, either restrict the platform field or move those flags to `unknown_flags`.
-- [ ] **`mitre_attack` coverage**: is the field present on every rule (including those with `[]`)? For each non-empty entry, does the matched command *directly* perform that technique, or does it only assist a subsequent action? Remove any technique that requires a separate actor or decision to materialise.
+- [ ] **`mitre_attack` coverage**: is the field present on every rule and on `default_rule` (including those with `[]`)? For each non-empty entry, does the matched command *directly* perform that technique, or does it only assist a subsequent action? Remove any technique that requires a separate actor or decision to materialise.
 
 ---
 

@@ -122,7 +122,7 @@ For `cat`, `ls`, `find`, `grep`, `sed`, `awk`, `curl`, `git` — `high` is expec
 
 ### MITRE ATT&CK
 
-`mitre_attack` is required on every rule. Use an empty array `[]` when no technique applies — do not omit the field.
+`mitre_attack` is required on every rule and on `default_rule`. Use an empty array `[]` when no technique applies — do not omit the field.
 
 Identify applicable techniques from your knowledge of what the matched command does. No external data source is needed. Use sub-technique IDs (e.g. `T1059.004`) when the behaviour maps to a specific sub-technique; use the parent (e.g. `T1059`) only when no sub-technique fits.
 
@@ -155,7 +155,7 @@ Calibration reference. Note:
 - `match` and `pattern` both populated on every pattern
 - `reversible: "depends"` only on the script-file rule where write-or-not depends on script content
 - Read-only operations use `reversible: "yes"` not `"depends"`
-- `mitre_attack` present on every rule; empty array `[]` on rules with no applicable technique
+- `mitre_attack` present on every rule and on `default_rule`; empty array `[]` on rules with no applicable technique
 
 ```json
 {
@@ -257,7 +257,8 @@ Calibration reference. Note:
   "default_rule": {
     "risk_tags": ["reads-files"],
     "reversible": "yes",
-    "severity": "INFO"
+    "severity": "INFO",
+    "mitre_attack": []
   }
 }
 ```

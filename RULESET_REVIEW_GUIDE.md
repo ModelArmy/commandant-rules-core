@@ -117,9 +117,11 @@ For the five primary coding assistant tools, check for these commonly missed rul
 
 The `default_rule` must reflect the tool's **baseline behavior with no risky flags**. It should be the lowest-risk state of the tool. Verify it is not duplicated inside the `rules` array.
 
+`mitre_attack` is required on `default_rule` with the same semantics as per-rule entries — use `[]` when no technique applies to the bare invocation. A missing `mitre_attack` field on the default rule marks the ruleset as pre-backfill for the default case, which prevents `readonly?` from returning `true` even for genuinely read-only tools.
+
 ### 2.9. MITRE ATT&CK Mapping
 
-`mitre_attack` is required on every rule; an empty array `[]` signals no applicable technique. The schema enforces presence and format (`T####` or `T####.###`) but not content accuracy — that requires human review.
+`mitre_attack` is required on every rule and on `default_rule`; an empty array `[]` signals no applicable technique. The schema enforces presence and format (`T####` or `T####.###`) but not content accuracy — that requires human review.
 
 **Check each non-empty entry:**
 - Does the matched command *directly* perform this technique, or does it only make the technique easier for a subsequent actor or decision? If the latter, the technique does not belong here — move any caveat to `notes`.
@@ -141,8 +143,6 @@ The `default_rule` must reflect the tool's **baseline behavior with no risky fla
 | Environment modification                         | T1574 Hijack Execution Flow                  |
 | Recursive directory traversal                    | T1083 File and Directory Discovery           |
 | Sensitive file content reading                   | T1005 Data from Local System                 |
-
-**Existing rulesets (pre-mitre_attack):** All committed rulesets in `commandant-rules-core` predate the `mitre_attack` field and will need a backfill pass before the first release. This is non-blocking for new rulesets; flag existing ones for a dedicated backfill session.
 
 
 ---
@@ -177,9 +177,10 @@ All five primary coding assistant tools plus several extended tools are committe
 | `pdfseparate`                        | `posix`   | ✅ Committed |
 | `dir`, `findstr`, `type`, `forfiles` | `windows` | ✅ Committed |
 
-### 3.3. Pending for all committed rulesets
+### 3.3. Pending
 
-- [ ] `mitre_attack` backfill — all committed rulesets predate the field; needs a dedicated pass (Section 2.9)
+- [ ] `mitre_attack` backfill on `default_rule` — all committed rulesets predate the `default_rule` `mitre_attack` requirement; needs a pass across the corpus
+- [ ] `mitre_attack` backfill on rules — `windows/dir`, `windows/findstr`, `windows/forfiles`, `windows/type` still need per-rule backfill
 
 ---
 
