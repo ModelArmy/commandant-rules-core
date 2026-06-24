@@ -4,7 +4,11 @@
   "platform": "posix",
   "platform_notes": "GNU diff adds --color, -z (null-delimited input), and --line-format which are not available on BSD diff. No behavioral differences exist for the flags covered in this ruleset. A linux-specific ruleset should be generated if those flags require risk rules.",
   "llm_confidence": "high",
-  "unknown_flags": ["--color", "-z", "--line-format"],
+  "unknown_flags": [
+    "--color",
+    "-z",
+    "--line-format"
+  ],
   "is_multiplexer": false,
   "option_abbreviations": {},
   "rules": [
@@ -17,7 +21,10 @@
           "pattern_type": "flag",
           "example": "diff -r dir1 dir2",
           "match": {
-            "flags_any": ["-r", "--recursive"]
+            "flags_any": [
+              "-r",
+              "--recursive"
+            ]
           }
         }
       ],
@@ -27,14 +34,19 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "likely_consequences": ["privacy-breach"],
-      "mitre_attack": ["T1083"]
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "mitre_attack": [
+        "T1083"
+      ]
     }
   ],
   "default_rule": {
     "risk_tags": [
       "reads-files"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   }

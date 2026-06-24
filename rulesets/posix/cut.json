@@ -4,7 +4,13 @@
   "platform": "posix",
   "platform_notes": "Valid for both GNU and BSD implementations. No significant behavioral differences regarding risk profiles exist between platforms.",
   "llm_confidence": "high",
-  "unknown_flags": ["--complement", "-n", "-s", "--output-delimiter", "-z"],
+  "unknown_flags": [
+    "--complement",
+    "-n",
+    "-s",
+    "--output-delimiter",
+    "-z"
+  ],
   "is_multiplexer": false,
   "option_abbreviations": {},
   "rules": [
@@ -17,7 +23,11 @@
           "pattern_type": "flag",
           "example": "cut -f1 input.csv",
           "match": {
-            "flags_any": ["-b", "-c", "-f"]
+            "flags_any": [
+              "-b",
+              "-c",
+              "-f"
+            ]
           }
         }
       ],
@@ -26,7 +36,9 @@
       ],
       "reversible": "yes",
       "severity": "INFO",
-      "mitre_attack": ["T1005"],
+      "mitre_attack": [
+        "T1005"
+      ],
       "all_match": false
     }
   ],
@@ -34,6 +46,7 @@
     "risk_tags": [
       "reads-files"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   }

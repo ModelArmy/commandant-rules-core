@@ -12,6 +12,7 @@
       "reads-files",
       "recursive"
     ],
+    "mitre_attack": [],
     "reversible": "yes",
     "severity": "INFO"
   },

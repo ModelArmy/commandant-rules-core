@@ -17,18 +17,27 @@
           "pattern_type": "flag",
           "example": "findstr /s \"pattern\" *.*",
           "match": {
-            "flags_any": ["/s"]
+            "flags_any": [
+              "/s"
+            ]
           }
         }
       ],
-      "risk_tags": ["reads-files", "recursive"],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "mitre_attack": [],
       "reversible": "yes",
       "severity": "INFO"
     }
   ],
   "default_rule": {
-    "risk_tags": ["reads-files"],
+    "risk_tags": [
+      "reads-files"
+    ],
     "reversible": "yes",
+    "mitre_attack": [],
     "severity": "INFO"
   }
 }
