@@ -95,7 +95,7 @@
     },
     {
       "id": "brew-package-management",
-      "description": "Manages Homebrew packages. Read-only subcommands (list, search, info) do not alter system state.",
+      "description": "Manages Homebrew packages. Known read-only subcommands (list, search, info) do not alter system state. Severity here reflects that unrecognized or future brew subcommands fall through to this rule; Homebrew's CLI surface evolves actively, so an unmatched subcommand should surface for review rather than silently pass as benign.",
       "patterns": [
         {
           "pattern": "brew ...",
@@ -109,14 +109,14 @@
       "risk_tags": [],
       "likely_consequences": [],
       "reversible": "yes",
-      "severity": "INFO",
+      "severity": "WARNING",
       "mitre_attack": []
     }
   ],
   "default_rule": {
     "risk_tags": [],
     "reversible": "yes",
-    "severity": "INFO",
+    "severity": "WARNING",
     "mitre_attack": []
   }
 }

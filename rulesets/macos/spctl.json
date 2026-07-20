@@ -70,7 +70,7 @@
     },
     {
       "id": "spctl-modifies-gatekeeper",
-      "description": "Queries or modifies Gatekeeper configuration or assessment policy.",
+      "description": "Queries or modifies Gatekeeper configuration or assessment policy. Known status queries reveal only a boolean and are low-value reconnaissance, but severity here is WARNING rather than INFO so that any unrecognized or future spctl subcommand surfaces for review rather than silently passing as benign.",
       "patterns": [
         {
           "pattern": "spctl ...",
@@ -86,7 +86,7 @@
       ],
       "likely_consequences": [],
       "reversible": "yes",
-      "severity": "INFO",
+      "severity": "WARNING",
       "mitre_attack": []
     }
   ],
@@ -95,7 +95,7 @@
       "elevated-privilege"
     ],
     "reversible": "yes",
-    "severity": "INFO",
+    "severity": "WARNING",
     "mitre_attack": []
   }
 }

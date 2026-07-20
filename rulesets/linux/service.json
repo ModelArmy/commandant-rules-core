@@ -39,7 +39,7 @@
     },
     {
       "id": "service-manages-daemon",
-      "description": "Runs an init script to control a system service. Typically requires root privileges for state-changing actions.",
+      "description": "Runs an init script to control a system service. Typically requires root privileges for state-changing actions. Severity here reflects distribution-dependent behavior (see platform_notes, llm_confidence: medium) rather than an actively-evolving CLI surface -- exact behavior for actions other than stop/restart is less certain across distributions, so an unmatched invocation should surface for review.",
       "patterns": [
         {
           "pattern": "service ...",
@@ -55,7 +55,7 @@
       ],
       "likely_consequences": [],
       "reversible": "yes",
-      "severity": "INFO",
+      "severity": "WARNING",
       "mitre_attack": []
     }
   ],
@@ -64,7 +64,7 @@
       "elevated-privilege"
     ],
     "reversible": "yes",
-    "severity": "INFO",
+    "severity": "WARNING",
     "mitre_attack": []
   }
 }

@@ -68,7 +68,7 @@
     },
     {
       "id": "systemctl-modifies-service-state",
-      "description": "Controls the state or configuration of system services. Typically requires root privileges for state-changing subcommands.",
+      "description": "Controls the state or configuration of system services. Known read-only subcommands (status, list-units, is-active) do not alter system state. Severity here reflects that unrecognized or future systemctl subcommands fall through to this rule; systemd's CLI surface has grown new verbs across releases, so an unmatched subcommand should surface for review rather than silently pass as benign.",
       "patterns": [
         {
           "pattern": "systemctl ...",
@@ -84,7 +84,7 @@
       ],
       "likely_consequences": [],
       "reversible": "yes",
-      "severity": "INFO",
+      "severity": "WARNING",
       "mitre_attack": []
     }
   ],
@@ -93,7 +93,7 @@
       "elevated-privilege"
     ],
     "reversible": "yes",
-    "severity": "INFO",
+    "severity": "WARNING",
     "mitre_attack": []
   }
 }

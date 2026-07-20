@@ -1,0 +1,52 @@
+{
+  "tool": "sudo",
+  "tool_summary": "Executes a command as another user, typically root, after authentication.",
+  "platform": "posix",
+  "platform_notes": "Flag set and behavior are effectively identical across GNU/Linux and BSD/macOS sudo implementations for the purposes of this ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "sudo-elevated-execution",
+      "description": "Any invocation of sudo executes a command with elevated privileges, typically as root. The wrapped command is not visible to commandant and may perform arbitrary, unbounded actions with root access.",
+      "patterns": [
+        {
+          "pattern": "sudo ...",
+          "pattern_type": "argument",
+          "example": "sudo apt-get install curl",
+          "match": {
+            "raw_pattern": "^sudo\\s"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise",
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the wrapped command, which commandant does not inspect. Treated as the worst case.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1548.003"
+      ],
+      "notes": "This tool blanket-flags all invocations because the wrapped command is opaque to commandant. A future iteration could unwrap and assess the wrapped command the way is_multiplexer tools are intended to be handled (see R-INS-05)."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1548.003"
+    ]
+  }
+}
