@@ -1,0 +1,139 @@
+{
+  "tool": "bun",
+  "tool_summary": "JavaScript/TypeScript runtime and package manager. Handles both dependency installation (bun install, bun add) and script/file execution (bun run, bun <file>) in one binary.",
+  "platform": "posix",
+  "platform_notes": "bun behavior is consistent across Linux and macOS.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "bun-run-file",
+      "description": "The run subcommand, or invoking bun directly with a file path, executes JavaScript/TypeScript code. The file's content is not inspected by commandant.",
+      "patterns": [
+        {
+          "pattern": "bun run ...",
+          "pattern_type": "argument",
+          "example": "bun run script.ts",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        },
+        {
+          "pattern": "bun $FILE",
+          "pattern_type": "argument",
+          "example": "bun script.ts",
+          "match": {
+            "raw_pattern": "^bun\\s+\\S+\\.(js|ts|jsx|tsx|mjs|cjs)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "bun-install-custom-registry",
+      "description": "The --registry flag points bun at a package registry other than the default. Installing from an untrusted or unfamiliar registry is a common supply-chain attack vector, since installed packages' lifecycle scripts run with the invoking user's privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "bun add --registry ...",
+          "pattern_type": "flag",
+          "example": "bun add --registry https://untrusted.example.com somepkg",
+          "match": {
+            "args_any": [
+              "add",
+              "install"
+            ],
+            "flags_any": [
+              "--registry"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its lifecycle scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "bun-install",
+      "description": "The add/install subcommands install packages, which by default run lifecycle scripts (postinstall, etc.) with the invoking user's privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "bun add ...",
+          "pattern_type": "argument",
+          "example": "bun add express",
+          "match": {
+            "args_any": [
+              "add",
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but lifecycle scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "bun-package-management",
+      "description": "Manages packages or runs JavaScript/TypeScript code. Read-only subcommands (pm ls) do not alter system state. Severity here reflects that unrecognized or future bun subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "bun ...",
+          "pattern_type": "argument",
+          "example": "bun pm ls",
+          "match": {
+            "raw_pattern": "^bun(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

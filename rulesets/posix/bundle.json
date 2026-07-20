@@ -1,0 +1,127 @@
+{
+  "tool": "bundle",
+  "tool_summary": "Ruby's Bundler, the standard dependency manager for Ruby projects. Installs Gemfile-declared gems (running native extension build code) and can execute arbitrary Ruby via `bundle exec`.",
+  "platform": "posix",
+  "platform_notes": "bundle behavior and flags are consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "bundle-install-custom-source",
+      "description": "A Gemfile can declare a custom `source` other than the default RubyGems.org, or bundle can be pointed at one via --local/--path combined with a pre-seeded custom gem path. Installing from an untrusted or unfamiliar source is a common supply-chain attack vector, since native extension gems execute build code at install time with the invoking user's privileges. commandant cannot inspect the Gemfile's declared sources directly; this rule covers the case where a source is specified on the command line.",
+      "patterns": [
+        {
+          "pattern": "bundle install --gemfile ...",
+          "pattern_type": "flag",
+          "example": "bundle config set --local mirror.https://rubygems.org https://untrusted.example.com",
+          "match": {
+            "args_any": [
+              "config"
+            ],
+            "raw_pattern": "mirror\\."
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ],
+      "notes": "This rule only catches source configuration performed via bundle config on the command line. A Gemfile's own `source` declarations are invisible to commandant; the actual install still happens via bundle-install below."
+    },
+    {
+      "id": "bundle-exec",
+      "description": "The exec subcommand runs an arbitrary command or script within the bundle's resolved gem environment. The executed command's content is not further inspected by commandant beyond what its own ruleset (if any) would independently assess.",
+      "patterns": [
+        {
+          "pattern": "bundle exec ...",
+          "pattern_type": "argument",
+          "example": "bundle exec rake db:migrate",
+          "match": {
+            "args_any": [
+              "exec"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the wrapped command, which commandant does not separately re-assess here.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "bundle-install",
+      "description": "Installs all gems declared in the Gemfile/Gemfile.lock. Native extension gems execute arbitrary build code (extconf.rb) at install time with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "bundle install ...",
+          "pattern_type": "argument",
+          "example": "bundle install",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Gems can be removed, but install-time build scripts may have already made changes beyond their own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "bundle-manages-dependencies",
+      "description": "Manages Ruby project dependencies. Read-only subcommands (list, show, check, outdated) do not alter system state. Severity here reflects that unrecognized or future bundle subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "bundle ...",
+          "pattern_type": "argument",
+          "example": "bundle list",
+          "match": {
+            "raw_pattern": "^bundle(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

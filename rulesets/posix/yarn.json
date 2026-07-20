@@ -1,0 +1,163 @@
+{
+  "tool": "yarn",
+  "tool_summary": "Installs, upgrades, and removes Node.js packages. Runs arbitrary package lifecycle scripts (postinstall, etc.) by default, same risk shape as npm.",
+  "platform": "posix",
+  "platform_notes": "yarn behavior and flags are consistent across Linux and macOS. Yarn Classic (v1) and Yarn Berry (v2+) differ in some internals (e.g. Plug'n'Play vs node_modules) but the subcommands and risk shape covered here are the same across both.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "yarn-install-custom-registry",
+      "description": "The --registry flag points yarn at a package registry other than the default. Installing from an untrusted or unfamiliar registry is a common supply-chain attack vector, since yarn runs package lifecycle scripts (postinstall, etc.) by default at install time with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "yarn add --registry ...",
+          "pattern_type": "flag",
+          "example": "yarn add --registry https://untrusted.example.com somepkg",
+          "match": {
+            "args_any": [
+              "add",
+              "install"
+            ],
+            "flags_any": [
+              "--registry"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its lifecycle scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "yarn-add-git-or-url",
+      "description": "Installing directly from a git URL or a tarball URL bypasses the registry entirely, fetching and executing code from a source that has not gone through any registry review.",
+      "patterns": [
+        {
+          "pattern": "yarn add git+...",
+          "pattern_type": "argument",
+          "example": "yarn add https://github.com/someuser/somerepo.git",
+          "match": {
+            "args_any": [
+              "add",
+              "install"
+            ],
+            "raw_pattern": "(git\\+|github:|https?://\\S+\\.(git|tgz|tar\\.gz))"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but lifecycle scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "yarn-add-or-install",
+      "description": "The add subcommand installs a new package; bare install (or yarn with no subcommand) installs all dependencies from the lockfile/package.json. Either runs lifecycle scripts (postinstall, etc.) with the invoking user's privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "yarn add ...",
+          "pattern_type": "argument",
+          "example": "yarn add express",
+          "match": {
+            "args_any": [
+              "add",
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but lifecycle scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "yarn-run-script",
+      "description": "The run subcommand (or bare `yarn <script-name>`) executes an arbitrary script defined in package.json's scripts field. The script's content is not inspected by commandant.",
+      "patterns": [
+        {
+          "pattern": "yarn run ...",
+          "pattern_type": "argument",
+          "example": "yarn run build",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ],
+      "notes": "yarn also allows running a package.json script without the explicit `run` keyword (e.g. `yarn build`). This bare-name form is not distinguishable from a yarn subcommand by pattern alone without a list of the project's declared scripts, and is not covered by this rule; it falls through to yarn-package-management."
+    },
+    {
+      "id": "yarn-package-management",
+      "description": "Manages Node.js packages. Read-only subcommands (list, info, why) do not alter system state. Severity here reflects that unrecognized or future yarn subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "yarn ...",
+          "pattern_type": "argument",
+          "example": "yarn list",
+          "match": {
+            "raw_pattern": "^yarn(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

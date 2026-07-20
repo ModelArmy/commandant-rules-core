@@ -1,0 +1,124 @@
+{
+  "tool": "gem",
+  "tool_summary": "Installs, upgrades, and removes Ruby packages (gems). Native extension gems run arbitrary extconf.rb/Rakefile build code at install time.",
+  "platform": "posix",
+  "platform_notes": "gem behavior and flags are consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "gem-install-custom-source",
+      "description": "The --source flag points gem at a source other than the default RubyGems.org. Installing from an untrusted or unfamiliar source is a common supply-chain attack vector, since native extension gems execute build code at install time with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "gem install --source ...",
+          "pattern_type": "flag",
+          "example": "gem install --source https://untrusted.example.com somegem",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "--source"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The gem can be uninstalled, but its install-time build scripts may have already made changes beyond the gem's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "gem-install",
+      "description": "Installs a gem, which downloads it and can execute arbitrary native extension build code (extconf.rb) with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "gem install ...",
+          "pattern_type": "argument",
+          "example": "gem install nokogiri",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The gem can be uninstalled, but install-time build scripts may have already made changes beyond the gem's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "gem-uninstall",
+      "description": "Removes an installed gem.",
+      "patterns": [
+        {
+          "pattern": "gem uninstall ...",
+          "pattern_type": "argument",
+          "example": "gem uninstall nokogiri",
+          "match": {
+            "args_any": [
+              "uninstall"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "gem-package-management",
+      "description": "Manages Ruby gems. Read-only subcommands (list, search, info) do not alter system state. Severity here reflects that unrecognized or future gem subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "gem ...",
+          "pattern_type": "argument",
+          "example": "gem list",
+          "match": {
+            "raw_pattern": "^gem(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}
