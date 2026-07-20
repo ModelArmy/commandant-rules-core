@@ -1,0 +1,132 @@
+{
+  "tool": "pfctl",
+  "tool_summary": "Configures the BSD packet filter (pf), macOS's kernel firewall.",
+  "platform": "macos",
+  "platform_notes": "pfctl is macOS/BSD-specific (pf firewall). The functional equivalent of iptables/nft on Linux.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pfctl-disable",
+      "description": "The -d flag disables packet filtering entirely, turning off the firewall.",
+      "patterns": [
+        {
+          "pattern": "pfctl -d ...",
+          "pattern_type": "flag",
+          "example": "pfctl -d",
+          "match": {
+            "flags_any": [
+              "-d"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    },
+    {
+      "id": "pfctl-flush-rules",
+      "description": "The -F flag flushes rules, states, or other filter data, removing existing firewall configuration.",
+      "patterns": [
+        {
+          "pattern": "pfctl -F ...",
+          "pattern_type": "flag",
+          "example": "pfctl -F rules",
+          "match": {
+            "flags_any": [
+              "-F"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    },
+    {
+      "id": "pfctl-load-ruleset",
+      "description": "The -f flag loads a ruleset from a file, replacing the active firewall configuration with whatever that file specifies.",
+      "patterns": [
+        {
+          "pattern": "pfctl -f ...",
+          "pattern_type": "flag",
+          "example": "pfctl -f /etc/pf.conf",
+          "match": {
+            "flags_any": [
+              "-f"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    },
+    {
+      "id": "pfctl-modifies-firewall",
+      "description": "Modifies or queries kernel firewall rules. The -s (show) flag does not alter state but reveals active rules, states, or NAT configuration -- directly exposing which ports and services are open or blocked, which is reconnaissance value useful for planning a network-level attack.",
+      "patterns": [
+        {
+          "pattern": "pfctl ...",
+          "pattern_type": "argument",
+          "example": "pfctl -s rules",
+          "match": {
+            "raw_pattern": "^pfctl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1016",
+        "T1049"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

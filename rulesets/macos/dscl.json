@@ -1,0 +1,145 @@
+{
+  "tool": "dscl",
+  "tool_summary": "Reads and modifies Directory Service data, including local user and group accounts, on macOS. The functional equivalent of useradd/userdel/usermod/passwd on Linux.",
+  "platform": "macos",
+  "platform_notes": "dscl is macOS-specific. Common node is '.' for the local directory. Write operations use -create, -delete, -append, -merge, -passwd, -change.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "dscl-privileged-uid-zero",
+      "description": "Setting a user's UniqueID (UID) to 0 via -create grants that account full root-equivalent privileges, independent of the root account itself. This mirrors the useradd/usermod -o -u 0 escalation pattern on Linux.",
+      "patterns": [
+        {
+          "pattern": "dscl . -create /Users/$USER UniqueID 0",
+          "pattern_type": "argument-combination",
+          "example": "dscl . -create /Users/backupadmin UniqueID 0",
+          "match": {
+            "args_any": [
+              "UniqueID"
+            ],
+            "flags_all": [
+              "-create"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1136.001",
+        "T1078.003"
+      ],
+      "notes": "The literal UID value (0) appears as a separate argument token, not attached to UniqueID, so this rule fires on the UniqueID key regardless of the value supplied. A future refinement could require the argument immediately following UniqueID to equal 0 specifically."
+    },
+    {
+      "id": "dscl-password-change",
+      "description": "The -passwd subcommand changes a user account's password. This can lock out the invoking agent or another user, or grant the agent knowledge of a new credential.",
+      "patterns": [
+        {
+          "pattern": "dscl . -passwd ...",
+          "pattern_type": "flag",
+          "example": "dscl . -passwd /Users/someuser newpassword",
+          "match": {
+            "flags_any": [
+              "-passwd"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The password can be changed again, but the interim state may cause lockout before a new one is set.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1098"
+      ]
+    },
+    {
+      "id": "dscl-create-or-delete-account",
+      "description": "The -create subcommand on a /Users or /Groups path creates a new account or group; -delete removes one. Either expands or contracts the system's account surface.",
+      "patterns": [
+        {
+          "pattern": "dscl . -create /Users/$USER",
+          "pattern_type": "flag-argument-combination",
+          "example": "dscl . -create /Users/newservice",
+          "match": {
+            "flags_any": [
+              "-create",
+              "-delete"
+            ],
+            "args_any": [
+              "/Users/",
+              "/Groups/"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Accounts can be created or removed again, but access exercised under a created account, or disruption caused by deleting one, is not undone.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1136.001"
+      ],
+      "notes": "args_any uses path prefixes since dscl paths are typically /Users/<name> or /Groups/<name>; exact matching on the full path is not attempted."
+    },
+    {
+      "id": "dscl-modifies-directory",
+      "description": "Reads or modifies Directory Service data. Read subcommands (-read, -list, -search) do not alter system state but can enumerate local user and group accounts, UIDs, shells, home directories, and group membership (e.g. admin group), which is reconnaissance value useful for planning a subsequent attack if exfiltrated.",
+      "patterns": [
+        {
+          "pattern": "dscl ...",
+          "pattern_type": "argument",
+          "example": "dscl . -list /Users",
+          "match": {
+            "raw_pattern": "^dscl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1087.001",
+        "T1069.001"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

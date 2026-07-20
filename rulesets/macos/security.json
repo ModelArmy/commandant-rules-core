@@ -1,0 +1,157 @@
+{
+  "tool": "security",
+  "tool_summary": "Accesses and manages macOS Keychain items, certificates, and trust settings from the command line.",
+  "platform": "macos",
+  "platform_notes": "security is macOS-specific.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "security-dump-keychain",
+      "description": "The dump-keychain subcommand, especially with -d, can print stored keychain item attributes and, in some configurations, secret data. This is a common technique for credential harvesting.",
+      "patterns": [
+        {
+          "pattern": "security dump-keychain ...",
+          "pattern_type": "argument",
+          "example": "security dump-keychain -d login.keychain",
+          "match": {
+            "args_any": [
+              "dump-keychain"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach",
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1555.001"
+      ]
+    },
+    {
+      "id": "security-find-generic-password",
+      "description": "The find-generic-password and find-internet-password subcommands, especially with -w (print password only), retrieve a specific stored credential in plaintext.",
+      "patterns": [
+        {
+          "pattern": "security find-generic-password -w ...",
+          "pattern_type": "argument-flag-combination",
+          "example": "security find-generic-password -w -s myservice",
+          "match": {
+            "args_any": [
+              "find-generic-password",
+              "find-internet-password"
+            ],
+            "flags_any": [
+              "-w"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach",
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1555.001"
+      ]
+    },
+    {
+      "id": "security-unlock-keychain",
+      "description": "The unlock-keychain subcommand unlocks a keychain, often with a password supplied on the command line, making subsequent items in that keychain accessible without further authentication.",
+      "patterns": [
+        {
+          "pattern": "security unlock-keychain ...",
+          "pattern_type": "argument",
+          "example": "security unlock-keychain -p password login.keychain",
+          "match": {
+            "args_any": [
+              "unlock-keychain"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1555.001"
+      ]
+    },
+    {
+      "id": "security-add-trusted-cert",
+      "description": "The add-trusted-cert subcommand adds a certificate to a trust store, which can cause the system to trust connections or code signed by that certificate going forward.",
+      "patterns": [
+        {
+          "pattern": "security add-trusted-cert ...",
+          "pattern_type": "argument",
+          "example": "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cert.pem",
+          "match": {
+            "args_any": [
+              "add-trusted-cert"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "reversible_note": "The certificate can be removed with delete-certificate, but connections trusted in the interim are not retroactively invalidated.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1553.004"
+      ]
+    },
+    {
+      "id": "security-accesses-keychain",
+      "description": "Accesses or modifies Keychain items, certificates, or trust settings.",
+      "patterns": [
+        {
+          "pattern": "security ...",
+          "pattern_type": "argument",
+          "example": "security list-keychains",
+          "match": {
+            "raw_pattern": "^security(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

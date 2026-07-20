@@ -1,0 +1,164 @@
+{
+  "tool": "diskutil",
+  "tool_summary": "Manages disks and volumes on macOS: partitioning, formatting, mounting, unmounting, and erasing. Overlaps with mkfs/mount/umount on Linux.",
+  "platform": "macos",
+  "platform_notes": "diskutil is macOS-specific.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "diskutil-erase",
+      "description": "The eraseDisk and eraseVolume subcommands destroy all data on the target disk or volume by reformatting it. This is unconditional and irreversible without a backup.",
+      "patterns": [
+        {
+          "pattern": "diskutil eraseDisk ...",
+          "pattern_type": "argument",
+          "example": "diskutil eraseDisk APFS Untitled disk2",
+          "match": {
+            "args_any": [
+              "eraseDisk",
+              "eraseVolume"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    },
+    {
+      "id": "diskutil-partition-or-repartition",
+      "description": "The partitionDisk and repartitionDisk subcommands rewrite a disk's partition table, which destroys or reorganizes existing data on that disk.",
+      "patterns": [
+        {
+          "pattern": "diskutil partitionDisk ...",
+          "pattern_type": "argument",
+          "example": "diskutil partitionDisk disk2 GPT APFS Untitled 100%",
+          "match": {
+            "args_any": [
+              "partitionDisk",
+              "repartitionDisk"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    },
+    {
+      "id": "diskutil-secure-erase",
+      "description": "The secureErase subcommand overwrites disk contents to prevent recovery, an explicitly destructive and irreversible operation by design.",
+      "patterns": [
+        {
+          "pattern": "diskutil secureErase ...",
+          "pattern_type": "argument",
+          "example": "diskutil secureErase freespace 1 disk2",
+          "match": {
+            "args_any": [
+              "secureErase"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    },
+    {
+      "id": "diskutil-unmount-or-eject",
+      "description": "The unmount, unmountDisk, and eject subcommands detach a volume or disk. Can disrupt processes with open handles on that volume.",
+      "patterns": [
+        {
+          "pattern": "diskutil unmount ...",
+          "pattern_type": "argument",
+          "example": "diskutil unmount /Volumes/External",
+          "match": {
+            "args_any": [
+              "unmount",
+              "unmountDisk",
+              "eject"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "diskutil-manages-disk",
+      "description": "Manages disks and volumes. The list/info subcommands do not alter system state but reveal volume layout, encryption status (APFS encrypted vs not), and mounted external/network volumes -- reconnaissance value useful for locating unencrypted-data targets.",
+      "patterns": [
+        {
+          "pattern": "diskutil ...",
+          "pattern_type": "argument",
+          "example": "diskutil list",
+          "match": {
+            "raw_pattern": "^diskutil(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1082",
+        "T1120"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}
