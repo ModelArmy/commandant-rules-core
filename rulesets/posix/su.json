@@ -1,0 +1,52 @@
+{
+  "tool": "su",
+  "tool_summary": "Substitutes the current user identity, typically to root, for a new shell or command.",
+  "platform": "posix",
+  "platform_notes": "Flag set is broadly consistent across GNU/Linux and BSD/macOS su for the purposes of this ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "su-identity-switch",
+      "description": "Any invocation of su switches the effective user identity, defaulting to root when no user is specified. A subsequent shell or command runs under the new identity with that identity's full privileges.",
+      "patterns": [
+        {
+          "pattern": "su ...",
+          "pattern_type": "argument",
+          "example": "su -",
+          "match": {
+            "raw_pattern": "^su(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise",
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what is done in the resulting session, which commandant does not inspect. Treated as the worst case.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1548"
+      ],
+      "notes": "Blanket-flags all invocations; the switched-to session is opaque to commandant. Bare su defaults to root on most systems."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1548"
+    ]
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "tool": "umount",
+  "tool_summary": "Detaches a mounted filesystem from the filesystem tree.",
+  "platform": "posix",
+  "platform_notes": "Core invocation and effect are consistent across GNU/Linux and BSD/macOS umount for the purposes of this ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "umount-force",
+      "description": "The -f/--force flag forces an unmount even if the filesystem is busy, which can cause data loss for processes with open file handles or unflushed writes on that filesystem.",
+      "patterns": [
+        {
+          "pattern": "umount -f ...",
+          "pattern_type": "flag",
+          "example": "umount -f /mnt/data",
+          "match": {
+            "flags_any": [
+              "-f",
+              "--force"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": []
+    },
+    {
+      "id": "umount-detaches-filesystem",
+      "description": "Detaches a mounted filesystem. Typically requires root privileges, and can disrupt processes with open handles on that filesystem.",
+      "patterns": [
+        {
+          "pattern": "umount ...",
+          "pattern_type": "argument",
+          "example": "umount /mnt/usb",
+          "match": {
+            "raw_pattern": "^umount(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

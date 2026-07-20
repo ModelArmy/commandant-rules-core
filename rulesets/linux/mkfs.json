@@ -1,0 +1,52 @@
+{
+  "tool": "mkfs",
+  "tool_summary": "Builds a filesystem on a device or partition, destroying any existing data on that target.",
+  "platform": "linux",
+  "platform_notes": "mkfs and its filesystem-specific variants (mkfs.ext4, mkfs.xfs, etc.) are GNU/Linux tools. macOS uses newfs instead. This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "notes": "commandant resolves rulesets by exact binary name (see posix_parser.cr: binary = tokens.first). mkfs.ext4, mkfs.xfs, etc. are each parsed as a distinct binary and will NOT match this file -- they require sibling ruleset files (mkfs.ext4.json, mkfs.xfs.json, ...). This file covers bare mkfs invocations (e.g. mkfs -t ext4 /dev/sdb1) only.",
+  "rules": [
+    {
+      "id": "mkfs-builds-filesystem",
+      "description": "Writes a new filesystem structure to a target device or partition, unconditionally destroying any existing data there. There is no dry-run or confirmation built into the tool itself.",
+      "patterns": [
+        {
+          "pattern": "mkfs ...",
+          "pattern_type": "argument",
+          "example": "mkfs -t ext4 /dev/sdb1",
+          "match": {
+            "raw_pattern": "^mkfs(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "deletes-files",
+      "irreversible",
+      "elevated-privilege"
+    ],
+    "reversible": "no",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1485"
+    ]
+  }
+}

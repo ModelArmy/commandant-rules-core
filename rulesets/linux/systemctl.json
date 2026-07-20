@@ -1,0 +1,99 @@
+{
+  "tool": "systemctl",
+  "tool_summary": "Controls the systemd system and service manager: starting, stopping, enabling, disabling, and inspecting services and units.",
+  "platform": "linux",
+  "platform_notes": "systemctl is specific to systemd-based Linux distributions. This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "systemctl-mask-or-disable",
+      "description": "The mask subcommand prevents a unit from being started at all, including manually, until unmasked. disable prevents automatic start at boot. Either can silently take a service offline in a way that outlasts the current session.",
+      "patterns": [
+        {
+          "pattern": "systemctl mask ...",
+          "pattern_type": "argument",
+          "example": "systemctl mask sshd",
+          "match": {
+            "args_any": [
+              "mask",
+              "disable"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "systemctl-stop-or-restart",
+      "description": "The stop and restart subcommands immediately affect a running service's availability, which can disrupt dependent processes or connections.",
+      "patterns": [
+        {
+          "pattern": "systemctl stop ...",
+          "pattern_type": "argument",
+          "example": "systemctl stop nginx",
+          "match": {
+            "args_any": [
+              "stop",
+              "restart"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "systemctl-modifies-service-state",
+      "description": "Controls the state or configuration of system services. Typically requires root privileges for state-changing subcommands.",
+      "patterns": [
+        {
+          "pattern": "systemctl ...",
+          "pattern_type": "argument",
+          "example": "systemctl status nginx",
+          "match": {
+            "raw_pattern": "^systemctl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

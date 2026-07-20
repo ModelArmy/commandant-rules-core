@@ -1,0 +1,52 @@
+{
+  "tool": "chroot",
+  "tool_summary": "Runs a command or shell with a different root directory, changing the filesystem root the process sees.",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent across GNU/Linux and BSD/macOS chroot for the purposes of this ruleset. Both typically require root privileges to invoke.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "chroot-changes-root",
+      "description": "Changes the apparent filesystem root for the invoked command or shell. Typically requires root privileges, and the wrapped command's actions inside the new root are not visible to commandant.",
+      "patterns": [
+        {
+          "pattern": "chroot ...",
+          "pattern_type": "argument",
+          "example": "chroot /mnt/target /bin/bash",
+          "match": {
+            "raw_pattern": "^chroot(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the wrapped command does inside the new root, which commandant does not inspect.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1611"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "executes-code",
+      "modifies-environment"
+    ],
+    "reversible": "depends",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1611"
+    ]
+  }
+}

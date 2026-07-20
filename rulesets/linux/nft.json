@@ -1,0 +1,77 @@
+{
+  "tool": "nft",
+  "tool_summary": "Configures nftables packet filtering and NAT rules in the Linux kernel firewall, the modern replacement for iptables.",
+  "platform": "linux",
+  "platform_notes": "nft is Linux-specific (nftables). This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "nft-flush",
+      "description": "The flush subcommand removes rules, chains, or entire rulesets, which can immediately open or close network access at the firewall level.",
+      "patterns": [
+        {
+          "pattern": "nft flush ...",
+          "pattern_type": "argument",
+          "example": "nft flush ruleset",
+          "match": {
+            "args_any": [
+              "flush"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    },
+    {
+      "id": "nft-modifies-firewall",
+      "description": "Modifies kernel firewall rules. Typically requires root privileges. Rule changes take effect immediately and control what network traffic is permitted.",
+      "patterns": [
+        {
+          "pattern": "nft ...",
+          "pattern_type": "argument",
+          "example": "nft add rule inet filter input tcp dport 22 accept",
+          "match": {
+            "raw_pattern": "^nft(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1562.004"
+    ]
+  }
+}

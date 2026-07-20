@@ -1,0 +1,49 @@
+{
+  "tool": "shred",
+  "tool_summary": "Securely deletes a file by overwriting its contents to make recovery difficult or impossible, optionally removing it afterward.",
+  "platform": "linux",
+  "platform_notes": "shred is a GNU coreutils tool, standard on Linux. Not present on macOS/BSD by default. This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "shred-overwrites-file",
+      "description": "Any invocation overwrites the target file's contents, making the original data unrecoverable by design. This is the tool's entire purpose and cannot be performed non-destructively.",
+      "patterns": [
+        {
+          "pattern": "shred ...",
+          "pattern_type": "argument",
+          "example": "shred -u secrets.txt",
+          "match": {
+            "raw_pattern": "^shred(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "deletes-files",
+      "irreversible"
+    ],
+    "reversible": "no",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1485"
+    ]
+  }
+}
