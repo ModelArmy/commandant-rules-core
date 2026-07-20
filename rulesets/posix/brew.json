@@ -1,0 +1,122 @@
+{
+  "tool": "brew",
+  "tool_summary": "Homebrew, a package manager originally for macOS and now also used on Linux. Installs, upgrades, and removes software packages and casks, and can execute arbitrary formula/cask install scripts.",
+  "platform": "posix",
+  "platform_notes": "Homebrew ships the same CLI and subcommand semantics on macOS and Linux (the Linux build is often called Linuxbrew but uses the same 'brew' binary and command surface). Unlike a tool that independently converged on POSIX behavior across separate implementations, this is one codebase distributed on both platforms, so risk profile is expected to track future Homebrew releases identically on both -- worth re-confirming if either platform's CLI diverges in a future version. Casks (GUI app installers) are macOS-only; Linux users will only see formula installs in practice.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "brew-install-untapped-or-cask",
+      "description": "The install subcommand downloads and executes formula or cask installation scripts, which can run arbitrary code with the invoking user's privileges (and, for casks, often prompt for or exercise elevated privileges via installer packages).",
+      "patterns": [
+        {
+          "pattern": "brew install ...",
+          "pattern_type": "argument",
+          "example": "brew install --cask some-app",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but install scripts may have made changes (files written elsewhere, launch agents installed, system settings changed) that uninstall does not fully revert.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "brew-tap-untrusted-source",
+      "description": "The tap subcommand adds a third-party formula repository as a package source, expanding the set of sources brew will trust for future installs. Tapping an untrusted or unfamiliar repository increases exposure to malicious formulae.",
+      "patterns": [
+        {
+          "pattern": "brew tap ...",
+          "pattern_type": "argument",
+          "example": "brew tap someuser/random-repo",
+          "match": {
+            "args_any": [
+              "tap"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "modifies-environment",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "brew-uninstall",
+      "description": "The uninstall subcommand removes an installed package and, depending on flags, its dependencies and configuration.",
+      "patterns": [
+        {
+          "pattern": "brew uninstall ...",
+          "pattern_type": "argument",
+          "example": "brew uninstall some-package",
+          "match": {
+            "args_any": [
+              "uninstall",
+              "remove"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be reinstalled, but any local configuration removed alongside it (e.g. via --zap on casks) may not be recoverable.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "brew-package-management",
+      "description": "Manages Homebrew packages. Read-only subcommands (list, search, info) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "brew ...",
+          "pattern_type": "argument",
+          "example": "brew list",
+          "match": {
+            "raw_pattern": "^brew(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}
