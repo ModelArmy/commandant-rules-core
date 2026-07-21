@@ -1,0 +1,104 @@
+{
+  "tool": "mv",
+  "tool_summary": "Moves or renames files and directories. Silently overwrites an existing file at the destination by default.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics (-f, -n, -i) are consistent between GNU and BSD mv for the flags covered here.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "mv-force-to-system-path",
+      "description": "Forced move targeting a sensitive system path (/etc, /usr, /bin, /boot, /System) can silently overwrite system files or configuration without confirmation.",
+      "patterns": [
+        {
+          "pattern": "mv -f ... /etc/...",
+          "pattern_type": "flag-argument-combination",
+          "example": "mv -f ./newconf /etc/myapp/config",
+          "match": {
+            "flags_any": [
+              "-f",
+              "--force"
+            ],
+            "args_any": [
+              "/etc",
+              "/usr",
+              "/bin",
+              "/sbin",
+              "/boot",
+              "/System"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "data-corruption",
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": []
+    },
+    {
+      "id": "mv-force",
+      "description": "The -f/--force flag suppresses any overwrite confirmation, silently replacing an existing file at the destination with no way to recover its prior contents through mv itself.",
+      "patterns": [
+        {
+          "pattern": "mv -f ...",
+          "pattern_type": "flag",
+          "example": "mv -f draft.txt final.txt",
+          "match": {
+            "flags_any": [
+              "-f",
+              "--force"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "mv-moves-or-renames",
+      "description": "Moves or renames a file or directory. Without -n (no-clobber) or -i (interactive), an existing file at the destination is overwritten silently, which is mv's default behavior rather than an edge case.",
+      "patterns": [
+        {
+          "pattern": "mv ...",
+          "pattern_type": "argument",
+          "example": "mv old.txt new.txt",
+          "match": {
+            "raw_pattern": "^mv(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If the destination already existed, its prior contents are overwritten and not recoverable by mv itself.",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files"
+    ],
+    "reversible": "no",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

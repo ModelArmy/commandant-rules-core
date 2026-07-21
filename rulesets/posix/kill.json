@@ -1,0 +1,97 @@
+{
+  "tool": "kill",
+  "tool_summary": "Sends a signal to a process by PID, most commonly to terminate it. Risk is concentrated in which PID is targeted and which signal is sent, not in the tool's flag surface, which is small and stable.",
+  "platform": "posix",
+  "platform_notes": "Signal names and default behavior (SIGTERM if no signal specified) are consistent between GNU and BSD kill.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "kill-pid-one-or-negative-one",
+      "description": "Targeting PID 1 (init/PID namespace root) or -1 (a special target meaning 'every process the caller has permission to signal') can terminate or destabilize far more than a single intended process, up to and including the entire system.",
+      "patterns": [
+        {
+          "pattern": "kill -9 1",
+          "pattern_type": "argument",
+          "example": "kill -9 -1",
+          "match": {
+            "raw_pattern": "^kill\\s+(-\\S+\\s+)?(-1|1)\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1489"
+      ],
+      "notes": "kill's argument syntax is ambiguous by position: 'kill -1' alone means signal 1 (SIGHUP) sent to no valid PID (and errors), while 'kill -9 -1' means SIGKILL sent to PID -1 (broadcast to all permitted processes). This rule's raw_pattern targets the broadcast/init case specifically (a signal flag followed by -1 or bare 1 as the PID), not standalone 'kill -1'. Given the ambiguity, false negatives are more likely than false positives here; treat this rule as a floor, not exhaustive coverage of dangerous PID targets."
+    },
+    {
+      "id": "kill-sigkill",
+      "description": "SIGKILL (-9 or -KILL) terminates a process immediately without allowing it to clean up, flush buffers, or release resources gracefully, unlike the default SIGTERM.",
+      "patterns": [
+        {
+          "pattern": "kill -9 ...",
+          "pattern_type": "flag",
+          "example": "kill -9 1234",
+          "match": {
+            "flags_any": [
+              "-9",
+              "-KILL",
+              "-SIGKILL"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "kill-sends-signal",
+      "description": "Sends a signal (SIGTERM by default) to a process. Terminates the target process; the specific process affected depends on the PID argument, which commandant does not further resolve to a process name.",
+      "patterns": [
+        {
+          "pattern": "kill ...",
+          "pattern_type": "argument",
+          "example": "kill 1234",
+          "match": {
+            "raw_pattern": "^kill(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "The signaled process cannot be un-signaled; whether this matters depends entirely on what the process was doing, which commandant does not inspect.",
+      "severity": "INFO",
+      "mitre_attack": [
+        "T1489"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "no",
+    "severity": "INFO",
+    "mitre_attack": [
+      "T1489"
+    ]
+  }
+}

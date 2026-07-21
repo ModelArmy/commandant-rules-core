@@ -1,0 +1,69 @@
+{
+  "tool": "exec",
+  "tool_summary": "A shell builtin that replaces the current shell process with the specified command, rather than forking a child process. Used bare (with only redirections) it also permanently redirects the shell's own file descriptors.",
+  "platform": "posix",
+  "platform_notes": "exec is a POSIX-required shell builtin, behavior consistent across sh/bash/zsh/dash. Like eval, it is typically only visible to commandant as part of a larger shell invocation rather than standalone.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "exec-replaces-process",
+      "description": "Replaces the current shell process image with the given command; the shell does not resume afterward. If used in a script or session an agent expects to continue running in, this can silently terminate the intended control flow rather than simply running a command and returning.",
+      "patterns": [
+        {
+          "pattern": "exec ...",
+          "pattern_type": "argument",
+          "example": "exec /usr/local/bin/newserver",
+          "match": {
+            "raw_pattern": "^exec\\s+\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "reversible_note": "The original shell process is gone once replaced; there is no return to it.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    },
+    {
+      "id": "exec-bare-redirection",
+      "description": "Bare exec with only redirection operators and no command (e.g. exec > file 2>&1) permanently redirects the shell's own stdout/stderr/stdin for the remainder of the session or script, rather than executing a new program.",
+      "patterns": [
+        {
+          "pattern": "exec > ...",
+          "pattern_type": "argument",
+          "example": "exec > /var/log/myscript.log 2>&1",
+          "match": {
+            "raw_pattern": "^exec\\s+[<>]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "modifies-environment"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059.004"
+    ]
+  }
+}

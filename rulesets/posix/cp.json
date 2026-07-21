@@ -1,0 +1,171 @@
+{
+  "tool": "cp",
+  "tool_summary": "Copies files and directories. Can overwrite existing files without confirmation and follow symlinks outside the intended source scope.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics (-r/-R, -f, -a, -p) are consistent between GNU and BSD cp for the flags covered here.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "cp-recursive-force-to-system-path",
+      "description": "Recursive, forced copy targeting a sensitive system path (/etc, /usr, /bin, /boot, /System) can silently overwrite system files and configuration without confirmation.",
+      "patterns": [
+        {
+          "pattern": "cp -rf ... /etc/...",
+          "pattern_type": "flag-argument-combination",
+          "example": "cp -rf ./build/* /etc/myapp",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-f"
+            ],
+            "args_any": [
+              "/etc",
+              "/usr",
+              "/bin",
+              "/sbin",
+              "/boot",
+              "/System"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "recursive",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "data-corruption",
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": []
+    },
+    {
+      "id": "cp-recursive-force",
+      "description": "Recursive, forced copy silently overwrites existing files at the destination without confirmation and copies entire directory trees, which can unintentionally clobber existing data or exhaust disk space.",
+      "patterns": [
+        {
+          "pattern": "cp -rf ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "cp -rf ./src ./dest",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-f"
+            ]
+          }
+        },
+        {
+          "pattern": "cp -fr ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "cp -fr ./src ./dest",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-f"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "reversible_note": "Overwritten destination files are not recoverable by cp itself.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "cp-dereference-recursive",
+      "description": "The -L/--dereference flag combined with recursion follows symlinks rather than copying them as links, which can pull in file content from outside the intended source tree if a symlink points elsewhere on the filesystem.",
+      "patterns": [
+        {
+          "pattern": "cp -rL ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "cp -rL /shared/incoming ./local",
+          "match": {
+            "flags_all": [
+              "-r",
+              "-L"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "cp-recursive",
+      "description": "Recursively copies a directory and its contents.",
+      "patterns": [
+        {
+          "pattern": "cp -r ...",
+          "pattern_type": "flag",
+          "example": "cp -r ./src ./dest",
+          "match": {
+            "flags_any": [
+              "-r",
+              "-R",
+              "--recursive"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "recursive"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "cp-copies-file",
+      "description": "Copies a file or files. Without -i (interactive) or -n (no-clobber), an existing file at the destination is overwritten silently.",
+      "patterns": [
+        {
+          "pattern": "cp ...",
+          "pattern_type": "argument",
+          "example": "cp file.txt backup.txt",
+          "match": {
+            "raw_pattern": "^cp(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If the destination already existed, its prior contents are overwritten and not recoverable by cp itself.",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files"
+    ],
+    "reversible": "no",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

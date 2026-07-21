@@ -1,0 +1,96 @@
+{
+  "tool": "killall",
+  "tool_summary": "Sends a signal to all processes matching a given name. Unlike pkill's pattern matching, killall typically requires an exact name match, which somewhat narrows accidental over-matching, but by design still targets every instance of that name.",
+  "platform": "posix",
+  "platform_notes": "killall exists on both GNU/Linux (psmisc) and macOS/BSD, but the two implementations differ meaningfully: GNU killall matches by process name substring/exact-match with several qualifier flags, while macOS/BSD killall's argument handling and available flags differ. This ruleset covers the common baseline (bare invocation and -9); flag-specific rules should be revisited if platform divergence proves significant in practice.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "killall-no-argument",
+      "description": "On some BSD/macOS killall implementations, invoking killall with no name argument at all signals every process the caller has permission to signal, rather than erroring -- a fundamentally different and far more dangerous behavior than GNU killall's exact-name-match requirement. Since platform cannot be reliably determined from the command string alone, this is treated as the worst case.",
+      "patterns": [
+        {
+          "pattern": "killall",
+          "pattern_type": "argument",
+          "example": "killall -9",
+          "match": {
+            "raw_pattern": "^killall\\s*(-\\S+\\s*)*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1489"
+      ],
+      "notes": "GNU killall requires a name argument and will error without one, so this rule is a false positive on Linux. Given the severity asymmetry (a blocked benign Linux invocation vs. an unflagged system-wide signal broadcast on BSD/macOS), erring toward ERROR here is intentional."
+    },
+    {
+      "id": "killall-sigkill",
+      "description": "SIGKILL (-9 or -KILL) terminates all matched processes immediately without allowing them to clean up, flush buffers, or release resources gracefully.",
+      "patterns": [
+        {
+          "pattern": "killall -9 ...",
+          "pattern_type": "flag",
+          "example": "killall -9 myapp",
+          "match": {
+            "flags_any": [
+              "-9",
+              "-KILL",
+              "-SIGKILL"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "killall-signals-all-matching",
+      "description": "Sends a signal (SIGTERM by default) to every currently running process matching the given name. Affects all instances of that process name at once, not a single targeted PID. Severity here is WARNING rather than INFO because killall's exact matching behavior (substring vs. exact name, and available flags) genuinely differs between GNU/Linux and macOS/BSD (see platform_notes, llm_confidence: medium); this is platform-behavioral uncertainty, not CLI drift over time.",
+      "patterns": [
+        {
+          "pattern": "killall ...",
+          "pattern_type": "argument",
+          "example": "killall myapp",
+          "match": {
+            "raw_pattern": "^killall(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1489"
+    ]
+  }
+}
