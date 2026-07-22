@@ -1,0 +1,127 @@
+{
+  "tool": "snap",
+  "tool_summary": "Ubuntu's sandboxed package/app installer. Snaps are more isolated than deb packages by design (confinement via AppArmor/seccomp), but --classic disables that confinement, and installing from a non-default channel can pull less-reviewed builds.",
+  "platform": "linux",
+  "platform_notes": "snap is Ubuntu-specific (though the snapd daemon is available on some other distributions).",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "snap-install-classic",
+      "description": "The --classic flag disables snap's default confinement (AppArmor/seccomp sandboxing), giving the installed application the same level of system access as a traditionally packaged application. This removes the primary security benefit snap packaging otherwise provides.",
+      "patterns": [
+        {
+          "pattern": "snap install --classic ...",
+          "pattern_type": "flag",
+          "example": "snap install --classic somepkg",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "--classic"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "snap-install-dangerous-local",
+      "description": "The --dangerous flag allows installing a local .snap file without signature verification, typically used for locally-built or unpublished snaps. This bypasses the Snap Store's review and signing process entirely.",
+      "patterns": [
+        {
+          "pattern": "snap install --dangerous ...",
+          "pattern_type": "flag",
+          "example": "snap install --dangerous ./local-build.snap",
+          "match": {
+            "flags_any": [
+              "--dangerous"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "snap-install",
+      "description": "Installs a snap package. Confined by default (AppArmor/seccomp), which somewhat limits blast radius compared to traditional package installation, but still fetches and runs code with the invoking system's snapd privileges.",
+      "patterns": [
+        {
+          "pattern": "snap install ...",
+          "pattern_type": "argument",
+          "example": "snap install spotify",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "snap-manages-packages",
+      "description": "Manages snap packages. Read-only subcommands (list, find, info) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "snap ...",
+          "pattern_type": "argument",
+          "example": "snap list",
+          "match": {
+            "raw_pattern": "^snap(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

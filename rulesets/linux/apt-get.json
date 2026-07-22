@@ -1,0 +1,132 @@
+{
+  "tool": "apt-get",
+  "tool_summary": "Debian/Ubuntu's older package manager front-end. Same underlying dpkg-based install/remove behavior as apt, requiring root and running arbitrary maintainer scripts at install/remove time.",
+  "platform": "linux",
+  "platform_notes": "apt-get is Debian/Ubuntu-specific. Sibling file to apt.json required by posix_parser.cr's exact-name resolution; subcommand names and flags are the same for the rules covered here (apt-get does not have some of apt's newer conveniences like list --installed, but install/purge/remove behavior is identical).",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "apt-get-install-unauthenticated",
+      "description": "The --allow-unauthenticated flag (or -y combined with a package from a repository lacking a valid signature) bypasses apt's package signature verification, removing the primary protection against tampered packages.",
+      "patterns": [
+        {
+          "pattern": "apt-get install --allow-unauthenticated ...",
+          "pattern_type": "flag",
+          "example": "apt-get install --allow-unauthenticated somepkg",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "--allow-unauthenticated"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its install-time maintainer scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "apt-get-install",
+      "description": "Installs a package, running arbitrary maintainer scripts (postinst, etc.) with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "apt-get install ...",
+          "pattern_type": "argument",
+          "example": "apt-get install curl",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time maintainer scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "apt-get-remove-purge",
+      "description": "The purge subcommand removes a package along with its configuration files, which is not undone by simply reinstalling.",
+      "patterns": [
+        {
+          "pattern": "apt-get purge ...",
+          "pattern_type": "argument",
+          "example": "apt-get purge somepkg",
+          "match": {
+            "args_any": [
+              "purge"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "apt-get-package-management",
+      "description": "Manages system packages. Read-only subcommands (list, show, search) do not alter system state. Severity here reflects that unrecognized or future apt subcommands fall through to this rule; apt's CLI surface evolves across releases, so an unmatched subcommand should surface for review rather than silently pass as benign.",
+      "patterns": [
+        {
+          "pattern": "apt-get ...",
+          "pattern_type": "argument",
+          "example": "apt-get -s install curl",
+          "match": {
+            "raw_pattern": "^apt-get(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

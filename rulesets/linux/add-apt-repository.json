@@ -1,0 +1,51 @@
+{
+  "tool": "add-apt-repository",
+  "tool_summary": "Adds a third-party APT repository (PPA or custom source) to the system's package sources, expanding the set of sources apt will trust for future installs and upgrades.",
+  "platform": "linux",
+  "platform_notes": "add-apt-repository is Debian/Ubuntu-specific (part of software-properties-common). A separate binary from apt itself.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "add-apt-repository-adds-source",
+      "description": "Adds a repository as a trusted package source. An untrusted or unfamiliar repository (especially a third-party PPA) is a common supply-chain attack vector, since packages installed from it run arbitrary maintainer scripts with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "add-apt-repository ...",
+          "pattern_type": "argument",
+          "example": "add-apt-repository ppa:someuser/random-ppa",
+          "match": {
+            "raw_pattern": "^add-apt-repository(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "reversible_note": "The source entry can be removed with --remove, but any packages already installed from it in the meantime are not automatically uninstalled.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1195.001"
+    ]
+  }
+}
