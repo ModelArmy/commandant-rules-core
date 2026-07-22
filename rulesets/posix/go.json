@@ -1,0 +1,121 @@
+{
+  "tool": "go",
+  "tool_summary": "The Go toolchain. `go run` compiles and immediately executes source, `go build` compiles without executing, and `go get`/`go install` fetch and can execute build-time code (though Go's module system does not run arbitrary install scripts the way npm/gem do).",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "go-run",
+      "description": "Compiles and immediately executes the given package or source file. The source content is not inspected by commandant; whatever the program does, it does with the invoking user's privileges at run time.",
+      "patterns": [
+        {
+          "pattern": "go run ...",
+          "pattern_type": "argument",
+          "example": "go run main.go",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the compiled program does, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "go-get-or-install-custom-source",
+      "description": "Fetching a module from a non-standard proxy (GOPROXY override) or with GOFLAGS/GONOSUMCHECK-style checksum bypass reduces the supply-chain verification Go's module system otherwise provides.",
+      "patterns": [
+        {
+          "pattern": "GOPROXY=... go get ...",
+          "pattern_type": "argument",
+          "example": "GONOSUMCHECK=1 go get github.com/someuser/somepkg",
+          "match": {
+            "args_any": [
+              "get",
+              "install"
+            ],
+            "raw_pattern": "GO(PROXY|NOSUMCHECK|FLAGS)\\s*="
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ],
+      "notes": "This rule assumes a leading VAR=value prefix before the go binary is visible in the same raw command string commandant assesses. posix_parser.cr does not appear to have explicit handling for leading environment variable assignments (binary = tokens.first), so if such a prefix causes the parser to treat 'GOPROXY=...' itself as the binary/tool name rather than part of the go invocation, this rule would never be reached at all. This should be verified against actual parser behavior before relying on this rule."
+    },
+    {
+      "id": "go-get-or-install",
+      "description": "Fetches and builds a module. Go's module system does not execute arbitrary install-time scripts the way npm/gem do, but the fetched source will be compiled (and, for `go install`, its binary made available), and any `//go:generate` or build-constrained code can still run at build time.",
+      "patterns": [
+        {
+          "pattern": "go get ...",
+          "pattern_type": "argument",
+          "example": "go get github.com/gin-gonic/gin",
+          "match": {
+            "args_any": [
+              "get",
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "go-toolchain",
+      "description": "Uses the Go toolchain. Subcommands not otherwise matched (build, test, vet, fmt) compile or analyze code without executing the resulting binary.",
+      "patterns": [
+        {
+          "pattern": "go ...",
+          "pattern_type": "argument",
+          "example": "go build ./...",
+          "match": {
+            "raw_pattern": "^go(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

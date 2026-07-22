@@ -1,0 +1,154 @@
+{
+  "tool": "python3",
+  "tool_summary": "The Python interpreter. Can execute a visible inline expression (-c), an opaque script file, arbitrary stdin, or drop into an interactive REPL.",
+  "platform": "posix",
+  "platform_notes": "Behavior of -c, -m, and bare invocation is consistent across CPython on Linux and macOS. This is a sibling file required because posix_parser.cr resolves rulesets by exact binary name, and python3 is the primary/only Python binary on many modern systems.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "python3-c-destructive-payload",
+      "description": "The -c flag executes the given string as Python code. When that string is visible in the invocation, commandant can inspect it directly. This rule fires when the -c payload itself contains a known destructive pattern (os.system/subprocess shelling out to rm -rf, a network fetch piped to exec, etc.), rather than merely flagging that Python was invoked.",
+      "patterns": [
+        {
+          "pattern": "python3 -c '... os.system(\"rm -rf ...\") ...'",
+          "pattern_type": "flag-argument-combination",
+          "example": "python3 -c \"import os; os.system('rm -rf /tmp/build')\"",
+          "match": {
+            "flags_any": [
+              "-c"
+            ],
+            "raw_pattern": "-c\\s+['\"].*(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|os\\.system|subprocess\\.(call|run|Popen)|shutil\\.rmtree).*['\"]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.006"
+      ],
+      "notes": "Coarse string-sniff over the -c payload, not a recursive re-assessment. A payload that evades this pattern (e.g. constructed via string concatenation, base64, or exec()/eval() of a computed string) will not be caught. See R-INS-05."
+    },
+    {
+      "id": "python3-c-visible-code",
+      "description": "The -c flag executes the given string as Python code. The code is visible in the invocation and does not itself match a known destructive pattern, but any -c invocation still executes arbitrary Python including imports, file I/O, and network access.",
+      "patterns": [
+        {
+          "pattern": "python3 -c '...'",
+          "pattern_type": "flag",
+          "example": "python3 -c \"print('hello')\"",
+          "match": {
+            "flags_any": [
+              "-c"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed code, which is visible in the -c argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.006"
+      ]
+    },
+    {
+      "id": "python3-module-execution",
+      "description": "The -m flag executes an installed module as a script (e.g. python -m http.server, python -m pip). Some modules (http.server serving a directory, pip performing installs) have meaningful side effects; the module name is visible but its internal behavior is not further inspected.",
+      "patterns": [
+        {
+          "pattern": "python3 -m ...",
+          "pattern_type": "flag",
+          "example": "python3 -m http.server 8000",
+          "match": {
+            "flags_any": [
+              "-m"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the specific module executed, which commandant does not further evaluate.",
+      "severity": "INFO",
+      "mitre_attack": [
+        "T1059.006"
+      ]
+    },
+    {
+      "id": "python3-script-file",
+      "description": "Invoking python with a script file path executes the file's contents, which are not visible in the command string itself and cannot currently be inspected by commandant. Treated as the worst case since the script's actions are entirely opaque.",
+      "patterns": [
+        {
+          "pattern": "python3 $SCRIPT",
+          "pattern_type": "argument",
+          "example": "python3 ./deploy.py",
+          "match": {
+            "raw_pattern": "^python3\\s+(?!-c\\b|-m\\b)\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. Treated as the worst case. See R-INS-03.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.006"
+      ]
+    },
+    {
+      "id": "python3-interactive",
+      "description": "Bare invocation with no -c, -m, or script argument starts an interactive REPL. Uncommon in an autonomous agent context -- an agent invoking an interactive interpreter is itself a signal worth attention.",
+      "patterns": [
+        {
+          "pattern": "python3",
+          "pattern_type": "argument",
+          "example": "python3",
+          "match": {
+            "raw_pattern": "^python3\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.006"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059.006"
+    ]
+  }
+}

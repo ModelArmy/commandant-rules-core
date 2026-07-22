@@ -1,0 +1,154 @@
+{
+  "tool": "php",
+  "tool_summary": "The PHP interpreter. Can execute a visible inline expression (-r), an opaque script file, or start a built-in development web server.",
+  "platform": "posix",
+  "platform_notes": "Behavior of -r, -S, and bare invocation is consistent across PHP-CLI on Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "php-r-destructive-payload",
+      "description": "The -r flag executes the given string as PHP code (without needing <?php tags). When that string is visible in the invocation, commandant can inspect it directly. This rule fires when the payload itself contains a known destructive pattern (shell_exec/system/exec shelling out to rm -rf, unlink on a broad path, etc.).",
+      "patterns": [
+        {
+          "pattern": "php -r '... system(\"rm -rf ...\") ...'",
+          "pattern_type": "flag-argument-combination",
+          "example": "php -r \"system('rm -rf /tmp/build');\"",
+          "match": {
+            "flags_any": [
+              "-r"
+            ],
+            "raw_pattern": "-r\\s+['\"].*(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|shell_exec|system\\(|exec\\(|passthru\\().*['\"]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059"
+      ],
+      "notes": "Coarse string-sniff over the -r payload, not a recursive re-assessment. See R-INS-05."
+    },
+    {
+      "id": "php-r-visible-code",
+      "description": "The -r flag executes the given string as PHP code. The code is visible in the invocation and does not itself match a known destructive pattern, but any -r invocation still executes arbitrary PHP including file I/O, network access, and shelling out.",
+      "patterns": [
+        {
+          "pattern": "php -r '...'",
+          "pattern_type": "flag",
+          "example": "php -r \"echo 'hello';\"",
+          "match": {
+            "flags_any": [
+              "-r"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed code, which is visible in the -r argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "php-builtin-server",
+      "description": "The -S flag starts PHP's built-in development web server, binding a network listener and serving the given directory's PHP scripts. Not intended for production use but can expose the local filesystem over the network if bound to a non-loopback address.",
+      "patterns": [
+        {
+          "pattern": "php -S ...",
+          "pattern_type": "flag",
+          "example": "php -S 0.0.0.0:8000",
+          "match": {
+            "flags_any": [
+              "-S"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "php-script-file",
+      "description": "Invoking php with a script file path executes the file's contents, which are not visible in the command string itself and cannot currently be inspected by commandant. Treated as the worst case since the script's actions are entirely opaque.",
+      "patterns": [
+        {
+          "pattern": "php $SCRIPT",
+          "pattern_type": "argument",
+          "example": "php ./deploy.php",
+          "match": {
+            "raw_pattern": "^php\\s+(?!-r\\b|-S\\b)\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. Treated as the worst case. See R-INS-03.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "php-interactive",
+      "description": "Bare invocation with no -r, -S, or script argument starts an interactive shell (php -a-style) or reads from stdin depending on build configuration. Uncommon in an autonomous agent context.",
+      "patterns": [
+        {
+          "pattern": "php",
+          "pattern_type": "argument",
+          "example": "php",
+          "match": {
+            "raw_pattern": "^php\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059"
+    ]
+  }
+}
