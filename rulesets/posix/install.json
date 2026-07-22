@@ -1,0 +1,103 @@
+{
+  "tool": "install",
+  "tool_summary": "Copies files while setting ownership, permissions, and directory structure in one step, commonly used in build/deploy scripts (make install targets) to place binaries into system directories.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics (-m, -o, -g, -d) are consistent between GNU and BSD install.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "install-setuid-setgid",
+      "description": "The -m/--mode flag with a setuid or setgid bit (e.g. 4755, 2755) creates a binary that executes with the file owner's or group's privileges regardless of who runs it. This is a classic privilege escalation vector if the owner is root.",
+      "patterns": [
+        {
+          "pattern": "install -m 4755 ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "install -m 4755 ./mybinary /usr/local/bin/",
+          "match": {
+            "flags_any": [
+              "-m",
+              "--mode"
+            ],
+            "raw_pattern": "-m\\s+[24]\\d{3}|--mode[=\\s][24]\\d{3}"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1548.001"
+      ]
+    },
+    {
+      "id": "install-to-system-path",
+      "description": "Installing to a system binary directory (/usr/bin, /usr/local/bin, /bin, /sbin) places a new executable somewhere it may be picked up by other users' PATH or by privileged processes, typically requiring root and silently overwriting any existing file of the same name.",
+      "patterns": [
+        {
+          "pattern": "install ... /usr/local/bin/...",
+          "pattern_type": "argument",
+          "example": "install ./mytool /usr/local/bin/mytool",
+          "match": {
+            "args_any": [
+              "/usr/bin",
+              "/usr/local/bin",
+              "/bin",
+              "/sbin",
+              "/usr/sbin"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "reversible_note": "Any existing file at the destination is overwritten without confirmation.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "install-copies-with-attributes",
+      "description": "Copies a file, setting ownership/permissions/directory structure in one step.",
+      "patterns": [
+        {
+          "pattern": "install ...",
+          "pattern_type": "argument",
+          "example": "install -m 644 config.yml /etc/myapp/",
+          "match": {
+            "raw_pattern": "^install(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If the destination already existed, its prior contents are overwritten and not recoverable by install itself.",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files"
+    ],
+    "reversible": "no",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

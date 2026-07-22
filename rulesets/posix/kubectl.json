@@ -1,0 +1,156 @@
+{
+  "tool": "kubectl",
+  "tool_summary": "Kubernetes cluster control CLI. Depending on the configured context and RBAC permissions, can create, modify, or delete workloads and resources across an entire cluster, not just the local machine.",
+  "platform": "posix",
+  "platform_notes": "kubectl behavior is consistent across Linux and macOS. Unlike most other tools in this corpus, the blast radius of a kubectl command depends on the currently configured cluster context, which commandant has no visibility into -- the same command could target a local minikube cluster or a shared production cluster.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "kubectl-delete",
+      "description": "The delete subcommand removes resources from the cluster. Deleting a namespace or a broad label selector can remove many resources at once, and cluster-scoped resources (nodes, cluster roles) can affect the entire cluster, not just one application.",
+      "patterns": [
+        {
+          "pattern": "kubectl delete ...",
+          "pattern_type": "argument",
+          "example": "kubectl delete namespace staging",
+          "match": {
+            "args_any": [
+              "delete"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "data-loss",
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "reversible_note": "Deleted resources are generally not recoverable through kubectl itself; whether the underlying application state can be reconstructed depends entirely on external backups.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "kubectl-exec",
+      "description": "The exec subcommand runs an arbitrary command inside a running container, which commandant does not further inspect. Effectively remote code execution against whatever workload the pod belongs to.",
+      "patterns": [
+        {
+          "pattern": "kubectl exec ...",
+          "pattern_type": "argument",
+          "example": "kubectl exec -it mypod -- /bin/bash",
+          "match": {
+            "args_any": [
+              "exec"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the executed command does inside the container, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1609"
+      ]
+    },
+    {
+      "id": "kubectl-apply-or-create",
+      "description": "The apply/create subcommands create or modify cluster resources from a manifest, which commandant does not parse. A manifest can define workloads with elevated privileges (hostNetwork, hostPID, privileged containers) or arbitrary container images to run.",
+      "patterns": [
+        {
+          "pattern": "kubectl apply ...",
+          "pattern_type": "argument",
+          "example": "kubectl apply -f deployment.yaml",
+          "match": {
+            "args_any": [
+              "apply",
+              "create"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on whether the previous resource state can be reapplied; commandant does not inspect the manifest's contents.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "kubectl-scale-or-drain",
+      "description": "The scale and drain subcommands change workload replica counts or evict all pods from a node, which can cause a service outage if applied to a production workload or node.",
+      "patterns": [
+        {
+          "pattern": "kubectl scale ...",
+          "pattern_type": "argument",
+          "example": "kubectl scale deployment myapp --replicas=0",
+          "match": {
+            "args_any": [
+              "scale",
+              "drain",
+              "cordon"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "kubectl-controls-cluster",
+      "description": "Controls a Kubernetes cluster. Read-only subcommands (get, describe, logs) do not alter cluster state. Severity here reflects that unrecognized or future kubectl subcommands fall through to this rule, and that the actual target cluster (local vs. shared/production) is not knowable from the command string alone -- an unmatched subcommand should surface for review rather than silently pass as benign.",
+      "patterns": [
+        {
+          "pattern": "kubectl ...",
+          "pattern_type": "argument",
+          "example": "kubectl get pods",
+          "match": {
+            "raw_pattern": "^kubectl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}
