@@ -1,0 +1,94 @@
+{
+  "tool": "chown",
+  "tool_summary": "Changes file owner and group. Transferring ownership to root or another user can affect who has effective control over a file, and -R applies the change across an entire directory tree at once.",
+  "platform": "posix",
+  "platform_notes": "Core syntax (owner[:group], -R, -h) is consistent between GNU and BSD chown.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "chown-recursive-to-root",
+      "description": "Recursively transferring ownership of a directory tree to root removes the invoking (typically non-root) user's ability to modify those files without elevated privileges, and can affect files the operator did not intend to include if the tree is large or contains unexpected symlinks.",
+      "patterns": [
+        {
+          "pattern": "chown -R root ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "chown -R root:root /opt/myapp",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ],
+            "args_any": [
+              "root"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "chown-recursive",
+      "description": "Recursively applies an ownership change across an entire directory tree at once. This is worth attention independent of privilege level or target user: recursion is inherently harder to scope correctly (a mistaken path, an unexpected symlink, or a broader tree than intended can all be affected), and neither commandant nor chown itself records the prior owner to allow a clean undo. Combined with -L/-H (dereference symlinks), can also affect files outside the target directory if symlinks point elsewhere.",
+      "patterns": [
+        {
+          "pattern": "chown -R ...",
+          "pattern_type": "flag",
+          "example": "chown -R appuser:appgroup ./build",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "recursive"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "reversible_note": "Neither chown nor commandant records the prior owner of affected files, so a recursive change cannot be cleanly undone without separately-recorded state.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "chown-changes-ownership",
+      "description": "Changes file owner and/or group.",
+      "patterns": [
+        {
+          "pattern": "chown ...",
+          "pattern_type": "argument",
+          "example": "chown appuser:appgroup file.txt",
+          "match": {
+            "raw_pattern": "^chown(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}
