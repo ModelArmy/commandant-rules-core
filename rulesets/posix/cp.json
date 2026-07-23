@@ -113,7 +113,7 @@
     },
     {
       "id": "cp-recursive",
-      "description": "Recursively copies a directory and its contents.",
+      "description": "Recursively copies a directory and its contents. Worth attention independent of whether -f is also present: recursive copy can overwrite existing files throughout the destination tree without confirmation (cp's default overwrite behavior applies at every level of the copy, not just the top-level target), and is inherently harder to scope correctly than a single-file copy -- a mistaken destination path or an unexpected existing directory structure can be affected.",
       "patterns": [
         {
           "pattern": "cp -r ...",
@@ -132,9 +132,12 @@
         "writes-files",
         "recursive"
       ],
-      "likely_consequences": [],
-      "reversible": "yes",
-      "severity": "INFO",
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "reversible_note": "Any files already existing in the destination tree are overwritten and not recoverable through cp itself, consistent with cp's single-file behavior elsewhere in this ruleset.",
+      "severity": "WARNING",
       "mitre_attack": []
     },
     {
