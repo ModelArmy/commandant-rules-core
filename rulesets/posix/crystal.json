@@ -1,0 +1,158 @@
+{
+  "tool": "crystal",
+  "tool_summary": "The Crystal compiler. `crystal run` compiles and immediately executes source, `crystal build` compiles without executing, and `crystal eval` executes a visible inline expression. Crystal macros run at compile time, meaning code can execute during compilation itself, not only when the resulting binary is later run. Distinct from `shards`, which only resolves dependencies.",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent across Linux and macOS. Notable as commandant.cr's own implementation language.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "crystal-eval-destructive-payload",
+      "description": "The eval subcommand executes the given string as Crystal code. When that string is visible in the invocation, commandant can inspect it directly. This rule fires when the payload itself contains a known destructive pattern (system()/Process.run shelling out to rm -rf, File.delete in a loop, etc.), rather than merely flagging that crystal eval was invoked.",
+      "patterns": [
+        {
+          "pattern": "crystal eval '... system(\"rm -rf ...\") ...'",
+          "pattern_type": "argument",
+          "example": "crystal eval \"system(\\\"rm -rf /tmp/build\\\")\"",
+          "match": {
+            "args_any": [
+              "eval"
+            ],
+            "raw_pattern": "(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|system\\(|Process\\.run|`.*`)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059"
+      ],
+      "notes": "Coarse string-sniff over the eval payload, not a recursive re-assessment. Crystal macros also execute at compile time (not just via eval), so a destructive pattern embedded in a macro within a run/build target would not be caught by this rule at all -- see crystal-run and crystal-build below. See R-INS-05."
+    },
+    {
+      "id": "crystal-eval-visible-code",
+      "description": "The eval subcommand executes the given string as Crystal code. The code is visible in the invocation and does not itself match a known destructive pattern, but any eval invocation still executes arbitrary Crystal including file I/O, network access, and shelling out.",
+      "patterns": [
+        {
+          "pattern": "crystal eval '...'",
+          "pattern_type": "argument",
+          "example": "crystal eval \"puts 'hello'\"",
+          "match": {
+            "args_any": [
+              "eval"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed code, which is visible in the eval argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "crystal-run",
+      "description": "Compiles and immediately executes the given source file or project. Both compile-time macro execution and the resulting program's run-time behavior are opaque to commandant; the source content is not inspected.",
+      "patterns": [
+        {
+          "pattern": "crystal run ...",
+          "pattern_type": "argument",
+          "example": "crystal run src/main.cr",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        },
+        {
+          "pattern": "crystal $SOURCE.cr",
+          "pattern_type": "argument",
+          "example": "crystal src/main.cr",
+          "match": {
+            "raw_pattern": "^crystal\\s+(?!run\\b|build\\b|eval\\b|spec\\b|tool\\b|docs\\b|-)\\S+\\.cr(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the compiled program (and any compile-time macros) do, which commandant does not inspect. See R-INS-03.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "crystal-build",
+      "description": "Compiles source without running the resulting binary. Crystal macros still execute at compile time, meaning arbitrary code can run during the build itself even though the compiled program is not invoked as part of this command.",
+      "patterns": [
+        {
+          "pattern": "crystal build ...",
+          "pattern_type": "argument",
+          "example": "crystal build src/main.cr",
+          "match": {
+            "args_any": [
+              "build"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what compile-time macros do, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "crystal-toolchain",
+      "description": "Uses the Crystal toolchain. Subcommands not otherwise matched (spec, tool, docs) do not compile or execute project source with the same immediacy as run/build/eval.",
+      "patterns": [
+        {
+          "pattern": "crystal ...",
+          "pattern_type": "argument",
+          "example": "crystal spec",
+          "match": {
+            "raw_pattern": "^crystal(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}
