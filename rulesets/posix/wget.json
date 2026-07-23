@@ -1,0 +1,124 @@
+{
+  "tool": "wget",
+  "tool_summary": "Downloads files over HTTP(S)/FTP. Same pipe-to-shell and TLS-bypass risk shape as curl, plus a distinct recursive-mirroring capability that can download an entire site tree.",
+  "platform": "posix",
+  "platform_notes": "wget behavior and flags are consistent across Linux and macOS, though wget is not always installed by default on macOS (curl typically is).",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "wget-pipe-to-shell",
+      "description": "Piping wget's output directly into a shell (wget -O- ... | sh) executes fetched remote content immediately, with no opportunity to review it first. Same risk shape as curl's equivalent pattern.",
+      "patterns": [
+        {
+          "pattern": "wget -O- ... | sh",
+          "pattern_type": "argument",
+          "example": "wget -qO- https://example.com/install.sh | sh",
+          "match": {
+            "raw_pattern": "wget\\s[^|]*\\|\\s*(sudo\\s+)?(sh|bash|zsh|dash)\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the fetched script does, which commandant does not inspect. Treated as the worst case since the content is never reviewed before executing.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1105",
+        "T1059.004"
+      ],
+      "notes": "As with curl, this rule matches the direct pipe form only; a command-substitution variant would need to be caught at the wrapping shell's -c payload inspection instead, and is not recognized as a fetch-and-execute pattern there either."
+    },
+    {
+      "id": "wget-no-check-certificate",
+      "description": "The --no-check-certificate flag disables TLS certificate verification, removing protection against man-in-the-middle interception or spoofed servers for this request.",
+      "patterns": [
+        {
+          "pattern": "wget --no-check-certificate ...",
+          "pattern_type": "flag",
+          "example": "wget --no-check-certificate https://example.com/",
+          "match": {
+            "flags_any": [
+              "--no-check-certificate"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "wget-recursive-mirror",
+      "description": "The -r/--recursive flag (commonly with --mirror or -np) downloads an entire site tree by following links, which can pull down far more content than intended and consume significant disk space or bandwidth if the target site is large or the recursion depth is unbounded.",
+      "patterns": [
+        {
+          "pattern": "wget -r ...",
+          "pattern_type": "flag",
+          "example": "wget -r --no-parent https://example.com/docs/",
+          "match": {
+            "flags_any": [
+              "-r",
+              "--recursive",
+              "--mirror"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files",
+        "recursive"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "wget-downloads-file",
+      "description": "Downloads a file. A single, non-recursive download is low risk.",
+      "patterns": [
+        {
+          "pattern": "wget ...",
+          "pattern_type": "argument",
+          "example": "wget https://example.com/file.tar.gz",
+          "match": {
+            "raw_pattern": "^wget(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If a file of the same name already existed at the destination, wget's default behavior is to append a numeric suffix rather than overwrite, but with -O or -nc behavior differs; treated conservatively as not guaranteed reversible.",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress"
+    ],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "tool": "ftp",
+  "tool_summary": "Opens an interactive FTP session for file transfer. Plain FTP transmits credentials and data unencrypted, distinct from and weaker than sftp/scp, which run over SSH.",
+  "platform": "posix",
+  "platform_notes": "ftp behavior is broadly consistent across Linux and macOS, though the specific client (tnftp, lukemftp, or a distro's own) and available flags vary somewhat; core interactive-session behavior covered here is consistent.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "ftp-opens-unencrypted-session",
+      "description": "Opens an interactive FTP session. Unlike sftp/scp, plain FTP transmits credentials and file contents unencrypted over the network, exposing them to interception. Everything done in the session afterward is also invisible to commandant.",
+      "patterns": [
+        {
+          "pattern": "ftp ...",
+          "pattern_type": "argument",
+          "example": "ftp ftp.example.com",
+          "match": {
+            "raw_pattern": "^ftp(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1071.002"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1071.002"
+    ]
+  }
+}
