@@ -1,0 +1,73 @@
+{
+  "tool": "mkdir",
+  "tool_summary": "Creates directories. Generally low risk; the main hazard is permission mode on newly created directories.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics (-p, -m) are consistent between GNU and BSD mkdir.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "mkdir-world-writable-mode",
+      "description": "The -m/--mode flag with a permissive mode (e.g. 777) creates a directory writable by any user on the system, which can be used to plant or tamper with files, or as a staging area for privilege escalation if the directory ends up on a privileged program's search path.",
+      "patterns": [
+        {
+          "pattern": "mkdir -m 777 ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "mkdir -m 777 /tmp/shared",
+          "match": {
+            "flags_any": [
+              "-m",
+              "--mode"
+            ],
+            "args_any": [
+              "777",
+              "a+w",
+              "a=rwx"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "mkdir-creates-directory",
+      "description": "Creates a directory. Low risk in the general case.",
+      "patterns": [
+        {
+          "pattern": "mkdir ...",
+          "pattern_type": "argument",
+          "example": "mkdir -p ./build/output",
+          "match": {
+            "raw_pattern": "^mkdir(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

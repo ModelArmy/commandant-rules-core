@@ -1,0 +1,51 @@
+{
+  "tool": "mkfs.ntfs",
+  "tool_summary": "Builds an ntfs filesystem on a device or partition, destroying any existing data on that target.",
+  "platform": "linux",
+  "platform_notes": "mkfs.ntfs is a GNU/Linux filesystem-specific mkfs frontend. This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "mkfs-ntfs-builds-filesystem",
+      "description": "Writes a new filesystem structure to a target device or partition, unconditionally destroying any existing data there. There is no dry-run or confirmation built into the tool itself.",
+      "patterns": [
+        {
+          "pattern": "mkfs.ntfs ...",
+          "pattern_type": "argument",
+          "example": "mkfs.ntfs /dev/sdb1",
+          "match": {
+            "raw_pattern": "^mkfs\\.ntfs(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "irreversible",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1485"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "deletes-files",
+      "irreversible",
+      "elevated-privilege"
+    ],
+    "reversible": "no",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1485"
+    ]
+  }
+}

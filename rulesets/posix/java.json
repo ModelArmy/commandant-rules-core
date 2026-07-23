@@ -1,0 +1,95 @@
+{
+  "tool": "java",
+  "tool_summary": "The Java Runtime Environment launcher. Executes a compiled class, a jar, or (since JEP 330) a single-file source program directly. The executed bytecode/source is not inspected by commandant.",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "java-jar-or-class",
+      "description": "Executes a compiled jar file or class. Bytecode content is not visible in the command string and cannot currently be inspected by commandant. Treated similarly to a script-file invocation for other interpreters, since the executed logic is opaque.",
+      "patterns": [
+        {
+          "pattern": "java -jar ...",
+          "pattern_type": "flag",
+          "example": "java -jar app.jar",
+          "match": {
+            "flags_any": [
+              "-jar"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the jar does, which commandant does not inspect. See R-INS-03.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "java-single-file-source",
+      "description": "Since JEP 330, java can compile and run a single-file Java source program directly without a separate javac step. Unlike java -jar, the source is potentially visible as a file on disk but its content is not inspected by commandant.",
+      "patterns": [
+        {
+          "pattern": "java $SOURCE.java",
+          "pattern_type": "argument",
+          "example": "java Script.java",
+          "match": {
+            "raw_pattern": "^java\\s+(?!-)\\S+\\.java(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the program's contents, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059"
+      ]
+    },
+    {
+      "id": "java-executes-classpath",
+      "description": "Executes a compiled class from the classpath. The class's bytecode is not inspected by commandant.",
+      "patterns": [
+        {
+          "pattern": "java ...",
+          "pattern_type": "argument",
+          "example": "java -cp build com.example.Main",
+          "match": {
+            "raw_pattern": "^java(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "depends",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

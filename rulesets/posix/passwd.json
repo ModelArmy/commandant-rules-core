@@ -1,0 +1,83 @@
+{
+  "tool": "passwd",
+  "tool_summary": "Changes a user's password, or with privileges, another user's password or account status.",
+  "platform": "posix",
+  "platform_notes": "Core flag set is broadly consistent across GNU/Linux and BSD/macOS passwd for the purposes of this ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "passwd-lock-or-delete",
+      "description": "The -l/-lock and -d/--delete flags lock an account or remove its password entirely, which can deny access to the account or, on the account's own password, remove authentication protection.",
+      "patterns": [
+        {
+          "pattern": "passwd -l ...",
+          "pattern_type": "flag",
+          "example": "passwd -l someuser",
+          "match": {
+            "flags_any": [
+              "-l",
+              "--lock",
+              "-d",
+              "--delete"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision",
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Locking is reversible with -u/--unlock, but deleting a password (-d) is reversible only by setting a new one; either can cause immediate loss of account access.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1531"
+      ]
+    },
+    {
+      "id": "passwd-changes-credential",
+      "description": "Bare invocation or invocation targeting a specific user changes an authentication credential. This can lock the invoking agent or another user out of the account, or grant the agent knowledge of a new credential.",
+      "patterns": [
+        {
+          "pattern": "passwd ...",
+          "pattern_type": "argument",
+          "example": "passwd someuser",
+          "match": {
+            "raw_pattern": "^passwd(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The password can be changed again, but the interim state (old credential invalid) may cause lockout before a new one is set.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1098"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1098"
+    ]
+  }
+}

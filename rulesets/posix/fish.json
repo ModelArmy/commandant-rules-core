@@ -1,0 +1,130 @@
+{
+  "tool": "fish",
+  "tool_summary": "Invokes the fish shell, a user-friendly interactive shell with its own non-POSIX scripting syntax, which can execute arbitrary commands, scripts, or drop into an interactive session.",
+  "platform": "posix",
+  "platform_notes": "fish is not POSIX-compatible (different scripting syntax from sh/bash/dash/zsh), but the -c flag and script-file invocation risk shape mirror the POSIX shell family closely enough to reuse the same rule structure. commandant resolves rulesets by exact binary name (see posix_parser.cr), so this is an independent file, not a fallback from posix/sh.json.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "fish-c-destructive-payload",
+      "description": "The -c flag executes the command string given as its argument. When that string is visible in the invocation (unlike a script file), commandant can inspect it directly. This rule fires when the -c payload itself contains a known destructive pattern (rm -rf, a pipe to a shell, sudo, disk-writing redirection, etc.), rather than merely flagging that a shell was invoked.",
+      "patterns": [
+        {
+          "pattern": "fish -c '... rm -rf ...'",
+          "pattern_type": "flag-argument-combination",
+          "example": "fish -c 'rm -rf /tmp/build'",
+          "match": {
+            "flags_any": [
+              "-c"
+            ],
+            "raw_pattern": "-c\\s+['\"].*(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|>\\s*/dev/sd|curl[^|]*\\|\\s*sh|wget[^|]*\\|\\s*sh|sudo\\s).*['\"]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.004"
+      ],
+      "notes": "Coarse string-sniff over the -c payload, not a recursive re-assessment. fish's condition/loop syntax differs from POSIX (e.g. 'and'/'or' instead of &&/||), so a compound destructive command expressed in fish-native syntax may not be caught by this pattern even where the underlying shell tokens (rm, sudo, etc.) are the same. See R-INS-05 (multiplexer unwrapping) for the intended long-term fix."
+    },
+    {
+      "id": "fish-c-visible-command",
+      "description": "The -c flag executes the command string given as its argument. The command is visible in the invocation and does not itself match a known destructive pattern, but any -c invocation still executes arbitrary fish syntax including pipes, redirection, and command substitution.",
+      "patterns": [
+        {
+          "pattern": "fish -c '...'",
+          "pattern_type": "flag",
+          "example": "fish -c 'echo hello'",
+          "match": {
+            "flags_any": [
+              "-c"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed command, which is visible in the -c argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    },
+    {
+      "id": "fish-script-file",
+      "description": "Invoking fish with a script file path (rather than -c) executes the file's contents, which are not visible in the command string itself and cannot currently be inspected by commandant. This is treated as the worst case since the script's actions are entirely opaque.",
+      "patterns": [
+        {
+          "pattern": "fish $SCRIPT",
+          "pattern_type": "argument",
+          "example": "fish ./deploy.fish",
+          "match": {
+            "raw_pattern": "^fish\\s+(?!-c\\b)\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. Treated as the worst case. See R-INS-03 (shell script line-by-line inspection, not yet started) for the intended fix.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    },
+    {
+      "id": "fish-interactive",
+      "description": "Bare invocation with no -c and no script argument starts an interactive shell session. Uncommon in an autonomous agent context -- an agent invoking an interactive shell is itself a signal worth attention, since it suggests either a misconfigured command or an attempt to establish a persistent or harder-to-audit execution context.",
+      "patterns": [
+        {
+          "pattern": "fish",
+          "pattern_type": "argument",
+          "example": "fish",
+          "match": {
+            "raw_pattern": "^fish\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059.004"
+    ]
+  }
+}

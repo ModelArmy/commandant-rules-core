@@ -1,0 +1,133 @@
+{
+  "tool": "yum",
+  "tool_summary": "RHEL/CentOS/older Fedora's package manager. Installs, upgrades, and removes system packages, typically requiring root, and runs arbitrary %post/%postun scriptlets at install/remove time.",
+  "platform": "linux",
+  "platform_notes": "yum is specific to RHEL/CentOS and older Fedora releases; dnf has superseded it on newer systems but yum remains in wide use.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "yum-install-nogpgcheck",
+      "description": "The --nogpgcheck flag disables GPG signature verification for the packages being installed, removing the primary protection against tampered packages.",
+      "patterns": [
+        {
+          "pattern": "yum install --nogpgcheck ...",
+          "pattern_type": "flag",
+          "example": "yum install --nogpgcheck somepkg",
+          "match": {
+            "flags_any": [
+              "--nogpgcheck"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its install-time scriptlets may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "yum-add-repo",
+      "description": "The addrepo/config-manager --add-repo subcommands add a third-party repository as a trusted package source. An untrusted or unfamiliar repository is a common supply-chain attack vector.",
+      "patterns": [
+        {
+          "pattern": "yum-config-manager --add-repo ...",
+          "pattern_type": "argument",
+          "example": "yum-config-manager --add-repo https://example.com/repo.repo",
+          "match": {
+            "args_any": [
+              "addrepo"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ],
+      "notes": "yum-config-manager is typically a separate binary/wrapper; this rule covers only the case where repo addition is invoked via `yum addrepo` directly (if supported by the installed yum plugin set). yum-config-manager itself would need its own ruleset file to be assessed under its own name."
+    },
+    {
+      "id": "yum-install",
+      "description": "Installs a package, running arbitrary %post scriptlets with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "yum install ...",
+          "pattern_type": "argument",
+          "example": "yum install curl",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time scriptlets may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "yum-package-management",
+      "description": "Manages system packages. Read-only subcommands (list, info, search) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "yum ...",
+          "pattern_type": "argument",
+          "example": "yum list installed",
+          "match": {
+            "raw_pattern": "^yum(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

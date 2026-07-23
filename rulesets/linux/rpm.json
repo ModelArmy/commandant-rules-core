@@ -1,0 +1,132 @@
+{
+  "tool": "rpm",
+  "tool_summary": "The low-level RPM package tool that yum/dnf ultimately call. Installs .rpm files directly, bypassing repository/signature checks that yum/dnf perform, and runs arbitrary %post/%postun scriptlets at install/remove time.",
+  "platform": "linux",
+  "platform_notes": "rpm is used across RHEL/CentOS/Fedora and other RPM-based distributions.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "rpm-install-nodeps-noscripts-force",
+      "description": "The --nodeps, --noscripts, or --force flags override rpm's built-in safety checks, allowing installation despite dependency conflicts or file conflicts, or skipping/altering the execution of packaging scriptlets in ways that can leave the system in an inconsistent state.",
+      "patterns": [
+        {
+          "pattern": "rpm -i --force ...",
+          "pattern_type": "flag",
+          "example": "rpm -i --force --nodeps suspicious.rpm",
+          "match": {
+            "flags_any": [
+              "--nodeps",
+              "--noscripts",
+              "--force"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-corruption"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but overwritten files and install-time scriptlet side effects may not be recoverable.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "rpm-install",
+      "description": "Installs an .rpm package file directly. This bypasses yum/dnf's repository signature verification entirely, since rpm operates on a local file. Runs arbitrary %post scriptlets with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "rpm -i ...",
+          "pattern_type": "flag",
+          "example": "rpm -i package.rpm",
+          "match": {
+            "flags_any": [
+              "-i",
+              "--install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time scriptlets may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "rpm-erase",
+      "description": "The -e/--erase flag removes a package, running %preun/%postun scriptlets with root privileges.",
+      "patterns": [
+        {
+          "pattern": "rpm -e ...",
+          "pattern_type": "flag",
+          "example": "rpm -e somepkg",
+          "match": {
+            "flags_any": [
+              "-e",
+              "--erase"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "rpm-manages-packages",
+      "description": "Manages RPM packages at a low level. Read-only subcommands (-q, -qa, -qi) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "rpm ...",
+          "pattern_type": "argument",
+          "example": "rpm -qa",
+          "match": {
+            "raw_pattern": "^rpm(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

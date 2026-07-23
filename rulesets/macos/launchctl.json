@@ -1,0 +1,110 @@
+{
+  "tool": "launchctl",
+  "tool_summary": "Manages launchd services and daemons on macOS: loading, unloading, starting, stopping, and enabling/disabling persistent agents and daemons. The functional equivalent of systemctl/service on Linux.",
+  "platform": "macos",
+  "platform_notes": "launchctl is macOS-specific. Modern subcommands (bootstrap, bootout, enable, disable, kickstart) supersede legacy load/unload/start/stop on recent macOS versions.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "launchctl-loads-persistent-agent",
+      "description": "The load/bootstrap subcommands register a launch agent or daemon plist, which can establish a process that runs automatically at login or boot, persisting beyond the current session. This is a common persistence mechanism.",
+      "patterns": [
+        {
+          "pattern": "launchctl load ...",
+          "pattern_type": "argument",
+          "example": "launchctl load ~/Library/LaunchAgents/com.example.plist",
+          "match": {
+            "args_any": [
+              "load",
+              "bootstrap"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "reversible_note": "Reversible via unload/bootout, but the loaded agent may execute arbitrary code before being removed.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1543.001",
+        "T1547"
+      ]
+    },
+    {
+      "id": "launchctl-stop-or-unload",
+      "description": "The unload/bootout/stop subcommands immediately affect a running service's availability, which can disrupt dependent processes or connections.",
+      "patterns": [
+        {
+          "pattern": "launchctl unload ...",
+          "pattern_type": "argument",
+          "example": "launchctl unload ~/Library/LaunchAgents/com.example.plist",
+          "match": {
+            "args_any": [
+              "unload",
+              "bootout",
+              "stop"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "launchctl-manages-service",
+      "description": "Manages launchd services and daemons. The list/print subcommands enumerate every running daemon and agent with PIDs and labels, which reveals installed security tools, monitoring agents, and third-party software running as persistent services -- reconnaissance value useful for profiling a system before deciding how to evade detection.",
+      "patterns": [
+        {
+          "pattern": "launchctl ...",
+          "pattern_type": "argument",
+          "example": "launchctl list",
+          "match": {
+            "raw_pattern": "^launchctl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "privacy-breach"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1518",
+        "T1057"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

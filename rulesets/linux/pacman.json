@@ -1,0 +1,130 @@
+{
+  "tool": "pacman",
+  "tool_summary": "Arch Linux's package manager. Installs, upgrades, and removes system packages, typically requiring root, and runs arbitrary install/post_install hooks defined in a package's .install script.",
+  "platform": "linux",
+  "platform_notes": "pacman is Arch Linux-specific (and Arch derivatives: Manjaro, EndeavourOS, etc.).",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pacman-install-force-nodeps",
+      "description": "The --overwrite, --force, or --nodeps flags override pacman's built-in conflict and dependency checks, allowing installation despite file conflicts or missing dependencies.",
+      "patterns": [
+        {
+          "pattern": "pacman -S --overwrite '*' ...",
+          "pattern_type": "flag",
+          "example": "pacman -S --overwrite '*' somepkg",
+          "match": {
+            "flags_any": [
+              "--overwrite",
+              "--force",
+              "--nodeps"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-corruption"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but overwritten files and install-time hook side effects may not be recoverable.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "pacman-install",
+      "description": "Installs a package via the -S (sync) operation, running arbitrary .install hooks with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "pacman -S ...",
+          "pattern_type": "flag",
+          "example": "pacman -S curl",
+          "match": {
+            "flags_any": [
+              "-S",
+              "--sync"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time hook side effects may not be recoverable.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "pacman-remove-nosave-recursive",
+      "description": "The -Rns flags remove a package along with its configuration files and unneeded dependencies, which is a broader and less reversible removal than a plain -R.",
+      "patterns": [
+        {
+          "pattern": "pacman -Rns ...",
+          "pattern_type": "flag",
+          "example": "pacman -Rns somepkg",
+          "match": {
+            "raw_pattern": "-R[a-z]*n[a-z]*s|-R[a-z]*s[a-z]*n"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "pacman-manages-packages",
+      "description": "Manages Arch packages. Read-only operations (-Q query, -Ss search) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "pacman ...",
+          "pattern_type": "argument",
+          "example": "pacman -Q",
+          "match": {
+            "raw_pattern": "^pacman(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

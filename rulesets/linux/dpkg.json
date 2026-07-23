@@ -1,0 +1,128 @@
+{
+  "tool": "dpkg",
+  "tool_summary": "Debian's low-level package tool, the installer apt/apt-get ultimately call. Installs .deb files directly, bypassing repository/signature checks that apt performs, and runs arbitrary maintainer scripts at install/remove time.",
+  "platform": "linux",
+  "platform_notes": "dpkg is Debian/Ubuntu-specific.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "dpkg-install-force",
+      "description": "The --force-* family of flags (--force-all, --force-depends, --force-overwrite, etc.) overrides dpkg's built-in safety checks, allowing installation despite dependency conflicts, file overwrites, or other problems dpkg would otherwise refuse.",
+      "patterns": [
+        {
+          "pattern": "dpkg -i --force-all ...",
+          "pattern_type": "flag",
+          "example": "dpkg -i --force-all suspicious.deb",
+          "match": {
+            "raw_pattern": "--force-(all|depends|overwrite|conflicts|breaks)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-corruption"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but overwritten files and install-time maintainer script side effects may not be recoverable.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "dpkg-install",
+      "description": "Installs a .deb package file directly. This bypasses apt's repository signature verification entirely, since dpkg operates on a local file rather than a trusted repository. Runs arbitrary maintainer scripts (preinst/postinst) with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "dpkg -i ...",
+          "pattern_type": "flag",
+          "example": "dpkg -i package.deb",
+          "match": {
+            "flags_any": [
+              "-i",
+              "--install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time maintainer scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "dpkg-purge",
+      "description": "The -P/--purge flag removes a package along with its configuration files, which is not undone by simply reinstalling.",
+      "patterns": [
+        {
+          "pattern": "dpkg -P ...",
+          "pattern_type": "flag",
+          "example": "dpkg -P somepkg",
+          "match": {
+            "flags_any": [
+              "-P",
+              "--purge"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "dpkg-manages-packages",
+      "description": "Manages Debian packages at a low level. Read-only subcommands (-l, -s, -L) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "dpkg ...",
+          "pattern_type": "argument",
+          "example": "dpkg -l",
+          "match": {
+            "raw_pattern": "^dpkg(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

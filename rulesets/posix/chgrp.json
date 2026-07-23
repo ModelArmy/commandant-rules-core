@@ -1,0 +1,62 @@
+{
+  "tool": "chgrp",
+  "tool_summary": "Changes file group ownership. Lower risk than chown/chmod since group membership alone rarely grants privileged access by itself, but -R applies the change across an entire directory tree at once.",
+  "platform": "posix",
+  "platform_notes": "Core syntax (-R, -h) is consistent between GNU and BSD chgrp.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "chgrp-recursive",
+      "description": "Recursively applies a group ownership change across an entire directory tree at once. Lower ceiling than chmod/chown recursion since group membership alone rarely grants privileged access by itself, but recursion is still worth attention: it is inherently harder to scope correctly, and neither commandant nor chgrp itself records the prior group to allow a clean undo. Combined with -L/-H (dereference symlinks), can also affect files outside the target directory if symlinks point elsewhere.",
+      "patterns": [
+        {
+          "pattern": "chgrp -R ...",
+          "pattern_type": "flag",
+          "example": "chgrp -R appgroup ./build",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "recursive"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "Neither chgrp nor commandant records the prior group of affected files, so a recursive change cannot be cleanly undone without separately-recorded state.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "chgrp-changes-group",
+      "description": "Changes file group ownership.",
+      "patterns": [
+        {
+          "pattern": "chgrp ...",
+          "pattern_type": "argument",
+          "example": "chgrp appgroup file.txt",
+          "match": {
+            "raw_pattern": "^chgrp(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

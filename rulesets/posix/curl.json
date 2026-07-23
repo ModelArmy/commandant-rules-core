@@ -1,0 +1,124 @@
+{
+  "tool": "curl",
+  "tool_summary": "Transfers data to/from servers over HTTP(S) and other protocols. The classic curl-pipe-to-shell pattern (curl ... | sh) is one of the most common install-script vectors on the internet; -o can write fetched content anywhere the invoking user can write.",
+  "platform": "posix",
+  "platform_notes": "curl behavior and flags are consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "curl-pipe-to-shell",
+      "description": "Piping curl's output directly into a shell (curl ... | sh, curl ... | bash, or via `sh -c \"$(curl ...)\"`) executes fetched remote content immediately, with no opportunity to review it first. This is one of the most common supply-chain and drive-by-install patterns on the internet, legitimate and malicious alike.",
+      "patterns": [
+        {
+          "pattern": "curl ... | sh",
+          "pattern_type": "argument",
+          "example": "curl -sSL https://example.com/install.sh | sh",
+          "match": {
+            "raw_pattern": "curl\\s[^|]*\\|\\s*(sudo\\s+)?(sh|bash|zsh|dash)\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the fetched script does, which commandant does not inspect. Treated as the worst case since the content is never reviewed before executing.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1105",
+        "T1059.004"
+      ],
+      "notes": "This rule's raw_pattern matches the direct pipe form (curl ... | sh) only. The command-substitution variant (sh -c \"$(curl ...)\") is not matched by this pattern; it would need to be caught by sh.json's -c destructive-payload rule inspecting the substituted content, which itself only sniffs for a small set of known-dangerous string patterns rather than recognizing curl-fetch-and-execute as its own category. This is a real coverage gap, not an oversight in wording."
+    },
+    {
+      "id": "curl-insecure",
+      "description": "The -k/--insecure flag disables TLS certificate verification, removing protection against man-in-the-middle interception or spoofed servers for this request.",
+      "patterns": [
+        {
+          "pattern": "curl -k ...",
+          "pattern_type": "flag",
+          "example": "curl -k https://example.com/",
+          "match": {
+            "flags_any": [
+              "-k",
+              "--insecure"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "curl-output-to-file",
+      "description": "The -o/-O/--output flags write the fetched response body to a local file, which can overwrite an existing file without confirmation depending on the destination.",
+      "patterns": [
+        {
+          "pattern": "curl -o ...",
+          "pattern_type": "flag",
+          "example": "curl -o script.sh https://example.com/script.sh",
+          "match": {
+            "flags_any": [
+              "-o",
+              "-O",
+              "--output",
+              "--remote-name"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If the destination file already existed, its prior contents are overwritten and not recoverable by curl itself.",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "curl-transfers-data",
+      "description": "Transfers data to or from a server. A bare request without output redirection or piping to a shell is low risk.",
+      "patterns": [
+        {
+          "pattern": "curl ...",
+          "pattern_type": "argument",
+          "example": "curl https://api.example.com/status",
+          "match": {
+            "raw_pattern": "^curl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

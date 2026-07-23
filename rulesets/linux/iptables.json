@@ -1,0 +1,80 @@
+{
+  "tool": "iptables",
+  "tool_summary": "Configures IPv4 packet filtering and NAT rules in the Linux kernel firewall.",
+  "platform": "linux",
+  "platform_notes": "iptables is Linux-specific (netfilter). macOS uses pf instead. This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "iptables-flush-or-policy",
+      "description": "The -F/--flush flag removes all rules from a chain, and -P/--policy changes a chain's default policy (e.g. to ACCEPT or DROP). Either can immediately open or close network access at the firewall level.",
+      "patterns": [
+        {
+          "pattern": "iptables -F ...",
+          "pattern_type": "flag",
+          "example": "iptables -F",
+          "match": {
+            "flags_any": [
+              "-F",
+              "--flush",
+              "-P",
+              "--policy"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    },
+    {
+      "id": "iptables-modifies-firewall",
+      "description": "Modifies kernel firewall rules. Typically requires root privileges. Rule changes take effect immediately and control what network traffic is permitted.",
+      "patterns": [
+        {
+          "pattern": "iptables ...",
+          "pattern_type": "argument",
+          "example": "iptables -A INPUT -p tcp --dport 22 -j ACCEPT",
+          "match": {
+            "raw_pattern": "^iptables(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1562.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1562.004"
+    ]
+  }
+}

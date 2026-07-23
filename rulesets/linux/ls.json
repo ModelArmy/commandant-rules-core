@@ -1,8 +1,8 @@
 {
   "tool": "ls",
   "tool_summary": "Lists directory contents with optional metadata, recursion, and symlink dereferencing.",
-  "platform": "posix",
-  "platform_notes": "Core flag semantics are consistent between GNU ls and BSD ls for the flags covered here. This file is served to macOS (via [platform, 'posix'] fallback, first-match-wins) as well as any non-Linux POSIX platform. It does NOT cover -Z/--context (SELinux security context), which has no macOS/BSD equivalent -- see linux/ls.json, which is a complete, self-contained ruleset for Linux including the -Z rules plus everything here.",
+  "platform": "linux",
+  "platform_notes": "Full ls ruleset for Linux/GNU. Duplicates the shared rules from posix/ls.json and adds -Z/--context (SELinux security context), which has no equivalent on macOS/BSD ls. commandant resolves rulesets via [platform, 'posix'] fallback with first-match-wins, not a merge (see ruleset_store.cr bundle_entry_path), so this file must be self-contained rather than assuming posix/ls.json rules also apply on Linux.",
   "llm_confidence": "high",
   "unknown_flags": [],
   "is_multiplexer": false,
@@ -190,7 +190,46 @@
         "T1083",
         "T1005"
       ],
-      "notes": "Output format change - does not expand file access scope beyond what the user can already read. On Linux, combined with -Z, see ls-long-context in linux/ls.json (not applicable on macOS/BSD)."
+      "notes": "Output format change - does not expand file access scope beyond what the user can already read. Combined with -Z, see ls-long-context."
+    },
+    {
+      "id": "ls-long-context",
+      "description": "Long listing combined with SELinux security context shows both detailed file attributes and security labels simultaneously. Reveals security policy details and label granularity.",
+      "patterns": [
+        {
+          "pattern": "ls ... -l ... -Z ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -lZ /etc",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-Z"
+            ]
+          }
+        },
+        {
+          "pattern": "ls ... -Z ... -l ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ls -Zl /etc",
+          "match": {
+            "flags_all": [
+              "-l",
+              "-Z"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
+      "notes": "Output format change only - does not expand file access scope. Combined with -R, adds metadata exposure to recursive traversal."
     },
     {
       "id": "ls-all",
@@ -232,6 +271,34 @@
         "T1083"
       ],
       "notes": "Reveals hidden files without expanding file access scope beyond normal directory listing permissions. Combined with -R, see ls-recursive-all."
+    },
+    {
+      "id": "ls-security-context",
+      "description": "Displays SELinux security context (user:role:type:level) for each file. Exposes security policy details that could reveal the security model, label granularity, or identify files with weaker security contexts.",
+      "patterns": [
+        {
+          "pattern": "ls ... -Z ...",
+          "pattern_type": "flag",
+          "example": "ls -Z /etc",
+          "match": {
+            "flags_any": [
+              "-Z",
+              "--context"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "reads-files"
+      ],
+      "reversible": "yes",
+      "severity": "INFO",
+      "likely_consequences": [],
+      "all_match": false,
+      "mitre_attack": [
+        "T1083"
+      ],
+      "notes": "Output format change only - does not expand file access scope. Information could be used in a subsequent attack but ls does not directly compromise security. Combined with -l, see ls-long-context."
     }
   ],
   "default_rule": {

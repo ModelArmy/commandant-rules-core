@@ -1,0 +1,109 @@
+{
+  "tool": "userdel",
+  "tool_summary": "Deletes a user account from the system.",
+  "platform": "linux",
+  "platform_notes": "userdel is a GNU/Linux (shadow-utils) tool; macOS has no direct equivalent (dscl is used instead). This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "userdel-remove-home",
+      "description": "The -r/--remove flag deletes the user's home directory and mail spool along with the account, permanently destroying any files stored there.",
+      "patterns": [
+        {
+          "pattern": "userdel -r ...",
+          "pattern_type": "flag",
+          "example": "userdel -r someuser",
+          "match": {
+            "flags_any": [
+              "-r",
+              "--remove"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "elevated-privilege",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1531",
+        "T1485"
+      ]
+    },
+    {
+      "id": "userdel-force",
+      "description": "The -f/--force flag forcibly removes the account even if the user is logged in or files are still owned by the account elsewhere on the system, bypassing normal safety checks.",
+      "patterns": [
+        {
+          "pattern": "userdel -f ...",
+          "pattern_type": "flag",
+          "example": "userdel -f someuser",
+          "match": {
+            "flags_any": [
+              "-f",
+              "--force"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1531"
+      ]
+    },
+    {
+      "id": "userdel-removes-account",
+      "description": "Removes a user account. This can disrupt processes or file ownership associated with that account, and is a common precursor to covering tracks after unauthorized account creation.",
+      "patterns": [
+        {
+          "pattern": "userdel ...",
+          "pattern_type": "argument",
+          "example": "userdel someuser",
+          "match": {
+            "raw_pattern": "^userdel(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1531"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "irreversible"
+    ],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1531"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "tool": "csrutil",
+  "tool_summary": "Configures System Integrity Protection (SIP), a macOS security boundary that restricts modification of protected system files and processes even for root.",
+  "platform": "macos",
+  "platform_notes": "csrutil is macOS-specific. Most subcommands (status, enable, disable) require booting into Recovery Mode to take effect, but the invocation itself signals clear intent to alter a core security boundary.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "csrutil-disable",
+      "description": "The disable subcommand turns off System Integrity Protection, removing kernel-level restrictions on modifying protected system files, loading unsigned kernel extensions, and debugging protected processes. This is one of the most consequential security boundary changes available on macOS.",
+      "patterns": [
+        {
+          "pattern": "csrutil disable ...",
+          "pattern_type": "argument",
+          "example": "csrutil disable",
+          "match": {
+            "args_any": [
+              "disable"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "reversible_note": "Reversible via csrutil enable, but typically requires a Recovery Mode reboot in both directions, and any actions taken while SIP is disabled are not undone by re-enabling it.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1553",
+        "T1562.001"
+      ]
+    },
+    {
+      "id": "csrutil-modifies-protection",
+      "description": "Queries or modifies System Integrity Protection state. Even status queries are grouped with a WARNING-level default here because csrutil's presence in a command stream is a strong signal of intent to inspect or alter this boundary.",
+      "patterns": [
+        {
+          "pattern": "csrutil ...",
+          "pattern_type": "argument",
+          "example": "csrutil status",
+          "match": {
+            "raw_pattern": "^csrutil(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

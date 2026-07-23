@@ -1,0 +1,96 @@
+{
+  "tool": "shards",
+  "tool_summary": "Crystal's package manager. Resolves and installs dependencies declared in shard.yml. Installed shards' code is compiled and executed as part of any subsequent `crystal build`/`crystal run`/`shards build`.",
+  "platform": "posix",
+  "platform_notes": "shards behavior is consistent across Linux and macOS. Notable as the package manager of commandant.cr's own ecosystem.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "shards-install",
+      "description": "Resolves and fetches dependencies declared in shard.yml. Unlike gem/npm, shards itself does not execute install-time build scripts, but fetched source will be compiled and executed the next time the project is built or run, with the invoking user's privileges at that point.",
+      "patterns": [
+        {
+          "pattern": "shards install ...",
+          "pattern_type": "argument",
+          "example": "shards install",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "reversible_note": "Fetched dependencies can be removed, but if a subsequent build/run has already compiled and executed the fetched code, that execution is not undone.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "shards-build",
+      "description": "Compiles the project (and its dependencies) into a binary. Crystal macros run at compile time, meaning dependency code can execute during the build itself, not only when the resulting binary is later run.",
+      "patterns": [
+        {
+          "pattern": "shards build ...",
+          "pattern_type": "argument",
+          "example": "shards build",
+          "match": {
+            "args_any": [
+              "build"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what dependency macros or the resulting binary do, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "shards-manages-dependencies",
+      "description": "Manages Crystal project dependencies. Read-only subcommands (list, outdated, check) do not fetch, compile, or execute dependency code. Severity here reflects that unrecognized or future shards subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "shards ...",
+          "pattern_type": "argument",
+          "example": "shards list",
+          "match": {
+            "raw_pattern": "^shards(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

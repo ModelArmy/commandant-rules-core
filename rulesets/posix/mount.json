@@ -1,0 +1,93 @@
+{
+  "tool": "mount",
+  "tool_summary": "Attaches a filesystem, device, or network share to a directory in the filesystem tree.",
+  "platform": "posix",
+  "platform_notes": "Core invocation and effect are consistent across GNU/Linux and BSD/macOS mount; specific filesystem type support and option names vary but that detail is out of scope for this baseline ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "mount-bind-or-remote",
+      "description": "Bind mounts (--bind) and remote filesystem mounts (nfs, cifs, sshfs) expose one part of the filesystem inside another location, or attach network-controlled storage, either of which can be used to bypass path-based access assumptions elsewhere in the system.",
+      "patterns": [
+        {
+          "pattern": "mount --bind ...",
+          "pattern_type": "flag",
+          "example": "mount --bind /etc /mnt/target/etc",
+          "match": {
+            "flags_any": [
+              "--bind",
+              "-B"
+            ]
+          }
+        },
+        {
+          "pattern": "mount -t nfs ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "mount -t nfs remotehost:/export /mnt/data",
+          "match": {
+            "flags_any": [
+              "-t"
+            ],
+            "args_any": [
+              "nfs",
+              "cifs",
+              "smbfs",
+              "sshfs"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The mount can be undone with umount, but data written or read while mounted is not.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1564.005"
+      ]
+    },
+    {
+      "id": "mount-attaches-filesystem",
+      "description": "Attaches a filesystem or device to the filesystem tree. Typically requires root privileges, and changes what storage is accessible at a given path.",
+      "patterns": [
+        {
+          "pattern": "mount ...",
+          "pattern_type": "argument",
+          "example": "mount /dev/sdb1 /mnt/usb",
+          "match": {
+            "raw_pattern": "^mount(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The mount can be undone with umount, but data written while mounted is not.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

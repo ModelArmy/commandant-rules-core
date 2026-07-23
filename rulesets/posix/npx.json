@@ -1,0 +1,80 @@
+{
+  "tool": "npx",
+  "tool_summary": "Executes an npm package binary, downloading and running it on the fly if not already installed locally. A direct arbitrary-code-execution vector distinct from npm install.",
+  "platform": "posix",
+  "platform_notes": "npx behavior is consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "npx-yes-auto-confirm",
+      "description": "The -y/--yes flag suppresses the confirmation prompt npx normally shows before downloading and running a package that isn't already installed, removing the last manual checkpoint before arbitrary code execution from the registry.",
+      "patterns": [
+        {
+          "pattern": "npx -y ...",
+          "pattern_type": "flag",
+          "example": "npx -y create-react-app myapp",
+          "match": {
+            "flags_any": [
+              "-y",
+              "--yes"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the executed package does, which commandant does not inspect.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "npx-executes-package",
+      "description": "Downloads (if needed) and executes an npm package's binary. This runs arbitrary code from the registry with the invoking user's privileges, distinct from and in addition to any install-time lifecycle scripts.",
+      "patterns": [
+        {
+          "pattern": "npx ...",
+          "pattern_type": "argument",
+          "example": "npx cowsay hello",
+          "match": {
+            "raw_pattern": "^npx(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the executed package does, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code",
+      "network-egress"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1195.001"
+    ]
+  }
+}

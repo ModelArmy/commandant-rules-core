@@ -1,0 +1,141 @@
+{
+  "tool": "chmod",
+  "tool_summary": "Changes file mode (permission) bits. World-writable or setuid/setgid modes are common security misconfigurations, and -R applies a mode change across an entire directory tree at once.",
+  "platform": "posix",
+  "platform_notes": "Core numeric and symbolic mode syntax (-R, -r/-h) is consistent between GNU and BSD chmod; some symbolic/numeric edge cases and -h (act on symlink itself) behavior differ subtly, but not for the flags covered here.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "chmod-setuid-setgid",
+      "description": "A numeric mode with the setuid or setgid bit set (e.g. 4755, 2755, or symbolic u+s/g+s) causes the file to execute with the file owner's or group's privileges regardless of who runs it. This is a classic privilege escalation vector if the owner is root.",
+      "patterns": [
+        {
+          "pattern": "chmod 4755 ...",
+          "pattern_type": "argument",
+          "example": "chmod 4755 /usr/local/bin/mytool",
+          "match": {
+            "raw_pattern": "chmod\\s+([24]\\d{3}\\b|[ug]\\+s)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1548.001"
+      ]
+    },
+    {
+      "id": "chmod-world-writable-recursive",
+      "description": "Recursive application of a world-writable mode (777, a+w, o+w) makes an entire directory tree writable by any user on the system, which can be used to plant or tamper with files, or as a staging area for further compromise.",
+      "patterns": [
+        {
+          "pattern": "chmod -R 777 ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "chmod -R 777 /var/www",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ],
+            "raw_pattern": "chmod\\s.*(-R|--recursive).*(777|a\\+w|o\\+w)|chmod\\s.*(777|a\\+w|o\\+w).*(-R|--recursive)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [],
+      "notes": "The raw_pattern is a best-effort heuristic covering flag-before-mode and mode-before-flag orderings; it will not catch every possible token arrangement (e.g. additional interleaved flags like -Rv 777) since it is not a full command-line parse. flags_any: [-R] alone still ensures chmod-recursive fires as a fallback in those cases."
+    },
+    {
+      "id": "chmod-world-writable",
+      "description": "Applying a world-writable mode (777, a+w, o+w) makes a file writable by any user on the system.",
+      "patterns": [
+        {
+          "pattern": "chmod 777 ...",
+          "pattern_type": "argument",
+          "example": "chmod 777 config.yml",
+          "match": {
+            "raw_pattern": "chmod\\s+(777\\b|a\\+w|o\\+w)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "chmod-recursive",
+      "description": "Recursively applies a mode change across an entire directory tree at once. This is worth attention independent of privilege level: recursion is inherently harder to scope correctly (a mistaken path, an unexpected symlink, or a broader tree than intended can all be affected), and neither commandant nor chmod itself records the prior mode to allow a clean undo. Combined with -L/-H (dereference symlinks), can also affect files outside the target directory if symlinks point elsewhere.",
+      "patterns": [
+        {
+          "pattern": "chmod -R ...",
+          "pattern_type": "flag",
+          "example": "chmod -R 755 ./build",
+          "match": {
+            "flags_any": [
+              "-R",
+              "--recursive"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "recursive"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "reversible_note": "Neither chmod nor commandant records the prior mode of affected files, so a recursive change cannot be cleanly undone without separately-recorded state.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "chmod-changes-permissions",
+      "description": "Changes file permission bits.",
+      "patterns": [
+        {
+          "pattern": "chmod ...",
+          "pattern_type": "argument",
+          "example": "chmod 644 file.txt",
+          "match": {
+            "raw_pattern": "^chmod(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

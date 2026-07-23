@@ -1,0 +1,131 @@
+{
+  "tool": "sh",
+  "tool_summary": "Invokes a POSIX-compatible shell, which can execute arbitrary commands, scripts, or drop into an interactive session.",
+  "platform": "posix",
+  "platform_notes": "Rules here cover the -c flag and script-file invocation, which are consistent across sh, bash, dash, zsh implementations of the POSIX shell interface. commandant resolves rulesets by exact binary name (see posix_parser.cr), so bash, dash, zsh, and fish each need their own sibling ruleset file even though the risk shape is shared -- this file is the template for those siblings, not something they fall back to.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "sh-c-destructive-payload",
+      "description": "The -c flag executes the command string given as its argument. When that string is visible in the invocation (unlike a script file), commandant can inspect it directly. This rule fires when the -c payload itself contains a known destructive pattern (rm -rf, a pipe to a shell, sudo, disk-writing redirection, etc.), rather than merely flagging that a shell was invoked.",
+      "patterns": [
+        {
+          "pattern": "sh -c '... rm -rf ...'",
+          "pattern_type": "flag-argument-combination",
+          "example": "sh -c 'rm -rf /tmp/build'",
+          "match": {
+            "flags_any": [
+              "-c"
+            ],
+            "raw_pattern": "-c\\s+['\"].*(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|>\\s*/dev/sd|curl[^|]*\\|\\s*sh|wget[^|]*\\|\\s*sh|sudo\\s).*['\"]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.004"
+      ],
+      "notes": "This is a coarse string-sniff over the -c payload, not a recursive re-assessment of the payload as its own command. A payload that evades this pattern (e.g. an equivalent command constructed via variable expansion) will not be caught. See R-INS-05 (multiplexer unwrapping) for the intended long-term fix: recursively running the extracted command through the normal ruleset lookup instead of pattern-sniffing the raw string here."
+    },
+    {
+      "id": "sh-c-visible-command",
+      "description": "The -c flag executes the command string given as its argument. The command is visible in the invocation and does not itself match a known destructive pattern, but any -c invocation still executes arbitrary shell syntax including pipes, redirection, and command substitution.",
+      "patterns": [
+        {
+          "pattern": "sh -c '...'",
+          "pattern_type": "flag",
+          "example": "sh -c 'echo hello'",
+          "match": {
+            "flags_any": [
+              "-c"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed command, which is visible in the -c argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    },
+    {
+      "id": "sh-script-file",
+      "description": "Invoking sh with a script file path (rather than -c) executes the file's contents, which are not visible in the command string itself and cannot currently be inspected by commandant. This is treated as the worst case since the script's actions are entirely opaque.",
+      "patterns": [
+        {
+          "pattern": "sh $SCRIPT",
+          "pattern_type": "argument",
+          "example": "sh ./deploy.sh",
+          "match": {
+            "raw_pattern": "^sh\\s+(?!-c\\b)\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. Treated as the worst case. See R-INS-03 (shell script line-by-line inspection, not yet started) for the intended fix.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.004"
+      ],
+      "notes": "Also matches piped/heredoc script content (e.g. sh < script.sh) only if a filename-like argument follows sh; a bare `cmd | sh` is better caught by the piped-command's own ruleset (see e.g. find-pipe-xargs's shell-pipe pattern) or a future dedicated pipe-to-shell rule."
+    },
+    {
+      "id": "sh-interactive",
+      "description": "Bare invocation with no -c and no script argument starts an interactive shell session. Uncommon in an autonomous agent context -- an agent invoking an interactive shell is itself a signal worth attention, since it suggests either a misconfigured command or an attempt to establish a persistent or harder-to-audit execution context.",
+      "patterns": [
+        {
+          "pattern": "sh",
+          "pattern_type": "argument",
+          "example": "sh",
+          "match": {
+            "raw_pattern": "^sh\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059.004"
+    ]
+  }
+}

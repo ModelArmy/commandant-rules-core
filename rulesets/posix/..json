@@ -1,0 +1,50 @@
+{
+  "tool": ".",
+  "tool_summary": "The POSIX-standard spelling of the source builtin (dot command): executes a script's contents in the current shell context rather than a subshell. Identical behavior to bash/zsh's source, under a different, single-character name.",
+  "platform": "posix",
+  "platform_notes": "The dot command (.) is the POSIX-standard spelling; bash/zsh also provide source as a more readable alias with identical behavior. Sibling file to source.json required by posix_parser.cr's exact-name resolution -- the single character . is tokenized as its own binary name distinct from the word source.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "dot-executes-in-current-context",
+      "description": "Executes a script's contents directly in the current shell, rather than in a subshell as a normal script invocation would. This means the sourced script can silently alter the invoking shell's environment variables, current directory, PATH, aliases, or functions -- changes that persist after the source command completes and are not visible as a separate process. The script's content is not visible in the command string and cannot currently be inspected by commandant.",
+      "patterns": [
+        {
+          "pattern": ". $SCRIPT",
+          "pattern_type": "argument",
+          "example": ". ./setup-env.sh",
+          "match": {
+            "raw_pattern": "^\\.(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "modifies-environment",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the sourced script's contents, which commandant does not inspect. Unlike a normal script invocation, environment changes made by a sourced script persist in the calling shell after the command completes, which can affect the behavior of every subsequent command in the session. See R-INS-03.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "modifies-environment",
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "ERROR",
+    "mitre_attack": [
+      "T1059.004"
+    ]
+  }
+}

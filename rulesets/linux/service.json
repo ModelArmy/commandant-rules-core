@@ -1,0 +1,70 @@
+{
+  "tool": "service",
+  "tool_summary": "Runs a System V-style init script to manage a system service, commonly a wrapper around systemctl on modern systemd distributions.",
+  "platform": "linux",
+  "platform_notes": "Behavior varies by distribution; on systemd systems 'service' is typically a compatibility wrapper around systemctl. This ruleset targets Linux only.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "service-stop-or-restart",
+      "description": "The stop and restart actions immediately affect a running service's availability, which can disrupt dependent processes or connections.",
+      "patterns": [
+        {
+          "pattern": "service ... stop",
+          "pattern_type": "argument",
+          "example": "service nginx stop",
+          "match": {
+            "args_any": [
+              "stop",
+              "restart"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "service-manages-daemon",
+      "description": "Runs an init script to control a system service. Typically requires root privileges for state-changing actions. Severity here reflects distribution-dependent behavior (see platform_notes, llm_confidence: medium) rather than an actively-evolving CLI surface -- exact behavior for actions other than stop/restart is less certain across distributions, so an unmatched invocation should surface for review.",
+      "patterns": [
+        {
+          "pattern": "service ...",
+          "pattern_type": "argument",
+          "example": "service nginx status",
+          "match": {
+            "raw_pattern": "^service(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

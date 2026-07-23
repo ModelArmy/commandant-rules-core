@@ -1,0 +1,68 @@
+{
+  "tool": "rsync",
+  "tool_summary": "Synchronizes files and directories, locally or over a network (typically via SSH). Designed around recursive, tree-wide synchronization by default when given a directory, and --delete removes files at the destination that no longer exist at the source.",
+  "platform": "posix",
+  "platform_notes": "rsync behavior and flags are consistent across Linux and macOS. Unlike scp, rsync's own trailing-slash convention on the source path changes whether the source directory itself or only its contents are synced -- a common source of surprising results, though not something commandant judges here.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "rsync-delete",
+      "description": "The --delete flag (and its variants --delete-before, --delete-during, --delete-after) removes files at the destination that do not exist at the source, making the destination an exact mirror. This can delete files at the destination the operator did not realize would be considered 'extra', especially if the source path or trailing-slash convention was not what was intended.",
+      "patterns": [
+        {
+          "pattern": "rsync --delete ...",
+          "pattern_type": "flag",
+          "example": "rsync -a --delete ./src/ user@host:/dest/",
+          "match": {
+            "raw_pattern": "--delete(-before|-during|-after|-excluded)?\\b"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files",
+        "recursive"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": []
+    },
+    {
+      "id": "rsync-syncs-tree",
+      "description": "Synchronizes a directory tree, locally or to/from a remote host. Unlike cp, rsync is designed around whole-tree operation by default when a directory is given, without needing an explicit -r/-R flag the way cp requires; overwrite of existing destination files with differing content is rsync's normal, intended behavior rather than an edge case.",
+      "patterns": [
+        {
+          "pattern": "rsync ...",
+          "pattern_type": "argument",
+          "example": "rsync -av ./src/ ./dest/",
+          "match": {
+            "raw_pattern": "^rsync(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files",
+        "recursive"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "Files with differing content at the destination are overwritten as part of rsync's normal synchronization behavior, not recoverable through rsync itself.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files",
+      "recursive"
+    ],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

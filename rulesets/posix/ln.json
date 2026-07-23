@@ -1,0 +1,68 @@
+{
+  "tool": "ln",
+  "tool_summary": "Creates hard or symbolic links between files. A symlink can point outside the intended directory scope, and -f silently overwrites an existing link or file at the target.",
+  "platform": "posix",
+  "platform_notes": "Core flag semantics (-s, -f) are consistent between GNU and BSD ln.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "ln-force-symlink",
+      "description": "The -f/--force flag combined with -s/--symbolic silently overwrites an existing file or link at the destination with a new symlink, which can redirect subsequent reads/writes through that path to an unexpected location without any confirmation.",
+      "patterns": [
+        {
+          "pattern": "ln -sf ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "ln -sf /opt/new-version/bin/tool /usr/local/bin/tool",
+          "match": {
+            "flags_all": [
+              "-s",
+              "-f"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "data-corruption"
+      ],
+      "reversible": "no",
+      "reversible_note": "The overwritten file or link's prior target is not recoverable by ln itself.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "ln-creates-link",
+      "description": "Creates a hard or symbolic link. A symlink pointing outside the intended directory scope can redirect subsequent reads or writes through that path to an unexpected location.",
+      "patterns": [
+        {
+          "pattern": "ln ...",
+          "pattern_type": "argument",
+          "example": "ln -s /opt/app/config.yml ./config.yml",
+          "match": {
+            "raw_pattern": "^ln(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "writes-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

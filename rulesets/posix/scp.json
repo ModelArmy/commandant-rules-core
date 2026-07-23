@@ -1,0 +1,95 @@
+{
+  "tool": "scp",
+  "tool_summary": "Copies files to or from a remote host over SSH. Direction (upload vs. download) determines whether the risk is local-write or remote-write, and commandant cannot always tell which from the argument order alone.",
+  "platform": "posix",
+  "platform_notes": "scp behavior and flags are consistent across Linux and macOS (OpenSSH is standard on both). Modern OpenSSH scp uses SFTP as its underlying transfer protocol by default; -O forces the legacy SCP protocol.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "scp-disable-host-key-checking",
+      "description": "The -o StrictHostKeyChecking=no option disables verification that the remote host is who it claims to be, removing protection against connecting to an impostor host.",
+      "patterns": [
+        {
+          "pattern": "scp -o StrictHostKeyChecking=no ...",
+          "pattern_type": "argument",
+          "example": "scp -o StrictHostKeyChecking=no file.txt user@host:/tmp/",
+          "match": {
+            "raw_pattern": "StrictHostKeyChecking\\s*=\\s*no"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1021.004"
+      ]
+    },
+    {
+      "id": "scp-recursive",
+      "description": "The -r flag copies an entire directory tree to or from the remote host. Combined with the direction ambiguity noted in this ruleset's summary, a recursive scp is both under-scoped (an entire tree, not a single file) and its actual effect (local write vs. remote write) is not reliably determinable from the command string.",
+      "patterns": [
+        {
+          "pattern": "scp -r ...",
+          "pattern_type": "flag",
+          "example": "scp -r ./project user@host:/backups/",
+          "match": {
+            "flags_any": [
+              "-r"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files",
+        "recursive"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If the destination (local or remote) already had content at the target paths, scp's default behavior overwrites it without confirmation, and commandant cannot determine after the fact which side was written to.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "scp-copies-file",
+      "description": "Copies a file to or from a remote host. Direction (which side is being written to) depends on which argument has a host: prefix, which commandant does not further parse to determine.",
+      "patterns": [
+        {
+          "pattern": "scp ...",
+          "pattern_type": "argument",
+          "example": "scp file.txt user@host:/tmp/",
+          "match": {
+            "raw_pattern": "^scp(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "no",
+      "reversible_note": "If a file already existed at the destination (local or remote), it is overwritten without confirmation.",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress",
+      "writes-files"
+    ],
+    "reversible": "no",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

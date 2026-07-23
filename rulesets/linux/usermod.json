@@ -1,0 +1,147 @@
+{
+  "tool": "usermod",
+  "tool_summary": "Modifies an existing user account's properties, including group membership, shell, and lock status.",
+  "platform": "linux",
+  "platform_notes": "usermod is a GNU/Linux (shadow-utils) tool; macOS has no direct equivalent (dscl is used instead). This ruleset targets Linux only.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "usermod-privileged-uid-zero",
+      "description": "The -o/--non-unique flag combined with a -u/--uid value of 0 changes an account's UID to 0, granting it full root privileges while keeping its original username.",
+      "patterns": [
+        {
+          "pattern": "usermod -o -u 0 ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "usermod -o -u 0 backupadmin",
+          "match": {
+            "flags_all": [
+              "-o",
+              "-u"
+            ],
+            "args_any": [
+              "0"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1078.003"
+      ],
+      "notes": "Same privilege escalation pattern as useradd -o -u 0, applied to an existing account."
+    },
+    {
+      "id": "usermod-add-privileged-group",
+      "description": "The -aG/-G flags add the target user to supplementary groups. Adding a user to a privileged group such as sudo, wheel, or docker grants that user root-equivalent access without changing their UID.",
+      "patterns": [
+        {
+          "pattern": "usermod -aG sudo ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "usermod -aG sudo someuser",
+          "match": {
+            "flags_any": [
+              "-G",
+              "--groups"
+            ],
+            "args_any": [
+              "sudo",
+              "wheel",
+              "docker",
+              "root"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Group membership can be reverted, but any access exercised under the elevated group in the meantime is not undone.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1136.001",
+        "T1078.003"
+      ],
+      "notes": "args_any list covers common privileged group names; not exhaustive. Host-specific privileged groups are not detectable by commandant."
+    },
+    {
+      "id": "usermod-lock-account",
+      "description": "The -L/--lock flag disables the account's password, and -e/--expiredate in the past forces immediate expiration. Both can deny account access.",
+      "patterns": [
+        {
+          "pattern": "usermod -L ...",
+          "pattern_type": "flag",
+          "example": "usermod -L someuser",
+          "match": {
+            "flags_any": [
+              "-L",
+              "--lock"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversible with -U/--unlock unless the account's own owner was relying on access in the interim.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1531"
+      ]
+    },
+    {
+      "id": "usermod-modifies-account",
+      "description": "Modifies an existing user account's properties. Depending on the flags used, this can change shell, home directory, or other account attributes with downstream effects on access.",
+      "patterns": [
+        {
+          "pattern": "usermod ...",
+          "pattern_type": "argument",
+          "example": "usermod -s /bin/bash someuser",
+          "match": {
+            "raw_pattern": "^usermod(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Most attributes can be changed back, but the specific effect depends entirely on which attribute is modified.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "modifies-environment"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

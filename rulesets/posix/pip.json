@@ -1,0 +1,156 @@
+{
+  "tool": "pip",
+  "tool_summary": "Installs, upgrades, and removes Python packages. Can execute arbitrary setup.py/pyproject.toml build code and fetch packages from arbitrary index URLs.",
+  "platform": "posix",
+  "platform_notes": "pip behavior and flags are consistent across Linux and macOS. pip3 is a separate binary name under posix_parser.cr's exact-name resolution and needs its own sibling ruleset file.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pip-install-custom-index",
+      "description": "The -i/--index-url or --extra-index-url flags point pip at a package index other than the default PyPI. Installing from an untrusted or unfamiliar index is a common supply-chain attack vector, since the installed package's build scripts run with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "pip install -i ...",
+          "pattern_type": "flag",
+          "example": "pip install -i https://untrusted.example.com/simple somepkg",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "-i",
+              "--index-url",
+              "--extra-index-url"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but its install-time build scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "pip-install-vcs-or-url",
+      "description": "Installing directly from a VCS URL (git+, hg+, etc.) or a raw HTTP(S)/local path bypasses the package index entirely, fetching and executing code from a source that has not gone through any registry review.",
+      "patterns": [
+        {
+          "pattern": "pip install git+...",
+          "pattern_type": "argument",
+          "example": "pip install git+https://github.com/someuser/somerepo.git",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "raw_pattern": "(git\\+|hg\\+|svn\\+|bzr\\+)\\S+"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but install-time build scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "pip-install",
+      "description": "Installs a package, which downloads it from an index and can execute arbitrary build code (setup.py, PEP 517 build backends) with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "pip install ...",
+          "pattern_type": "argument",
+          "example": "pip install requests",
+          "match": {
+            "args_any": [
+              "install"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but install-time build scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "pip-uninstall",
+      "description": "Removes an installed package.",
+      "patterns": [
+        {
+          "pattern": "pip uninstall ...",
+          "pattern_type": "argument",
+          "example": "pip uninstall requests",
+          "match": {
+            "args_any": [
+              "uninstall"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "pip-package-management",
+      "description": "Manages Python packages. Read-only subcommands (list, show, search, freeze) do not alter system state. Severity here reflects that unrecognized or future pip subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "pip ...",
+          "pattern_type": "argument",
+          "example": "pip list",
+          "match": {
+            "raw_pattern": "^pip(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

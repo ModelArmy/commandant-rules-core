@@ -1,0 +1,101 @@
+{
+  "tool": "spctl",
+  "tool_summary": "Configures Gatekeeper, macOS's code-signing and notarization enforcement system that controls which applications are permitted to run.",
+  "platform": "macos",
+  "platform_notes": "spctl is macOS-specific.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "spctl-disable-assess",
+      "description": "The --master-disable flag (or --global-disable on newer macOS) turns off Gatekeeper's code-signing assessment entirely, allowing unsigned or unnotarized applications to run without warning.",
+      "patterns": [
+        {
+          "pattern": "spctl --master-disable ...",
+          "pattern_type": "flag",
+          "example": "spctl --master-disable",
+          "match": {
+            "flags_any": [
+              "--master-disable",
+              "--global-disable"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "reversible_note": "Reversible via --master-enable, but any unsigned code executed in the interim is not undone by re-enabling.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1553.001",
+        "T1562.001"
+      ]
+    },
+    {
+      "id": "spctl-add-exception",
+      "description": "The --add subcommand whitelists a specific application path, exempting it from Gatekeeper assessment going forward without disabling protection system-wide.",
+      "patterns": [
+        {
+          "pattern": "spctl --add ...",
+          "pattern_type": "flag",
+          "example": "spctl --add /Applications/Suspicious.app",
+          "match": {
+            "flags_any": [
+              "--add"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "reversible_note": "Reversible via --remove, but any execution of the whitelisted app in the interim is not undone.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1553.001"
+      ]
+    },
+    {
+      "id": "spctl-modifies-gatekeeper",
+      "description": "Queries or modifies Gatekeeper configuration or assessment policy. Known status queries reveal only a boolean and are low-value reconnaissance, but severity here is WARNING rather than INFO so that any unrecognized or future spctl subcommand surfaces for review rather than silently passing as benign.",
+      "patterns": [
+        {
+          "pattern": "spctl ...",
+          "pattern_type": "argument",
+          "example": "spctl --status",
+          "match": {
+            "raw_pattern": "^spctl(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "tool": "zypper",
+  "tool_summary": "openSUSE's package manager. Installs, upgrades, and removes system packages, typically requiring root, and runs arbitrary %post scriptlets at install/remove time.",
+  "platform": "linux",
+  "platform_notes": "zypper is openSUSE/SUSE-specific.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "zypper-install-nogpgcheck",
+      "description": "The --no-gpg-checks flag disables GPG signature verification for the packages being installed, removing the primary protection against tampered packages.",
+      "patterns": [
+        {
+          "pattern": "zypper --no-gpg-checks install ...",
+          "pattern_type": "flag",
+          "example": "zypper --no-gpg-checks install somepkg",
+          "match": {
+            "flags_any": [
+              "--no-gpg-checks"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its install-time scriptlets may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "zypper-add-repo",
+      "description": "The addrepo (ar) subcommand adds a third-party repository as a trusted package source. An untrusted or unfamiliar repository is a common supply-chain attack vector.",
+      "patterns": [
+        {
+          "pattern": "zypper addrepo ...",
+          "pattern_type": "argument",
+          "example": "zypper addrepo https://example.com/repo/ myrepo",
+          "match": {
+            "args_any": [
+              "addrepo",
+              "ar"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "zypper-install",
+      "description": "Installs a package via the install (in) subcommand, running arbitrary %post scriptlets with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "zypper install ...",
+          "pattern_type": "argument",
+          "example": "zypper install curl",
+          "match": {
+            "args_any": [
+              "install",
+              "in"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time scriptlets may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "zypper-package-management",
+      "description": "Manages system packages. Read-only subcommands (search, info, list-repos) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "zypper ...",
+          "pattern_type": "argument",
+          "example": "zypper search curl",
+          "match": {
+            "raw_pattern": "^zypper(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

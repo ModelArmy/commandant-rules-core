@@ -1,0 +1,134 @@
+{
+  "tool": "uv",
+  "tool_summary": "Astral's fast Python package and project manager, increasingly displacing pip/pip-tools/virtualenv. Handles dependency installation, virtual environments, and script execution in one binary.",
+  "platform": "posix",
+  "platform_notes": "uv behavior is consistent across Linux and macOS.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "uv-run-script",
+      "description": "The run subcommand executes a Python script, auto-installing any dependencies declared via inline script metadata (PEP 723) first. This is a distinct execution vector from `uv pip install`: the script itself, and any dependency it pulls in, runs in one step with no separate review point between install and execution.",
+      "patterns": [
+        {
+          "pattern": "uv run ...",
+          "pattern_type": "argument",
+          "example": "uv run script.py",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.006"
+      ]
+    },
+    {
+      "id": "uv-install-custom-index",
+      "description": "The --index or --index-url flags point uv at a package index other than the default PyPI. Installing from an untrusted or unfamiliar index is a common supply-chain attack vector, since the installed package's build scripts run with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "uv pip install --index ...",
+          "pattern_type": "flag",
+          "example": "uv pip install --index https://untrusted.example.com/simple somepkg",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "--index",
+              "--index-url",
+              "--extra-index-url"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but its install-time build scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "uv-install",
+      "description": "The pip install, add, or sync subcommands install packages, which can execute arbitrary build code with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "uv pip install ...",
+          "pattern_type": "argument",
+          "example": "uv add requests",
+          "match": {
+            "args_any": [
+              "install",
+              "add",
+              "sync"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be uninstalled, but install-time build scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "uv-manages-packages",
+      "description": "Manages Python packages, virtual environments, or project dependencies. Read-only subcommands (pip list, tree, pip show) do not alter system state. Severity here reflects that unrecognized or future uv subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "uv ...",
+          "pattern_type": "argument",
+          "example": "uv pip list",
+          "match": {
+            "raw_pattern": "^uv(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

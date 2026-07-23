@@ -1,0 +1,139 @@
+{
+  "tool": "cargo",
+  "tool_summary": "Rust's build tool and package manager. Downloads dependencies from crates.io (or alternate registries), and build.rs build scripts run arbitrary code at build time by design.",
+  "platform": "posix",
+  "platform_notes": "cargo behavior and flags are consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "cargo-install-custom-registry",
+      "description": "The --registry or --index flags point cargo at a package registry other than the default crates.io. Installing from an untrusted or unfamiliar registry is a common supply-chain attack vector, since crates can include build.rs scripts that execute arbitrary code at build time.",
+      "patterns": [
+        {
+          "pattern": "cargo install --registry ...",
+          "pattern_type": "flag",
+          "example": "cargo install --registry untrusted somecrate",
+          "match": {
+            "args_any": [
+              "install",
+              "add"
+            ],
+            "flags_any": [
+              "--registry",
+              "--index"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The crate/binary can be removed, but build.rs scripts may have already made changes beyond the crate's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "cargo-install-git",
+      "description": "Installing directly from a git repository via --git bypasses the registry entirely, fetching and building code from a source that has not gone through crates.io's (limited) publishing checks.",
+      "patterns": [
+        {
+          "pattern": "cargo install --git ...",
+          "pattern_type": "flag",
+          "example": "cargo install --git https://github.com/someuser/somerepo",
+          "match": {
+            "args_any": [
+              "install"
+            ],
+            "flags_any": [
+              "--git"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The resulting binary can be removed, but build.rs scripts may have already made changes beyond the crate's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "cargo-install-or-build",
+      "description": "The install, build, run, and add subcommands fetch and compile crates, which can execute arbitrary code via build.rs build scripts and procedural macros at build time, with the invoking user's privileges.",
+      "patterns": [
+        {
+          "pattern": "cargo install ...",
+          "pattern_type": "argument",
+          "example": "cargo install ripgrep",
+          "match": {
+            "args_any": [
+              "install",
+              "build",
+              "run",
+              "add"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The crate/binary can be removed, but build.rs scripts may have already made changes beyond the crate's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ],
+      "notes": "build.rs execution is a normal, expected part of the Rust build process, not a misconfiguration -- this rule reflects that cargo build/run/install inherently trust the crate graph, not that these subcommands are unusual to invoke."
+    },
+    {
+      "id": "cargo-package-management",
+      "description": "Manages Rust crates and builds. Read-only subcommands (search, tree, metadata, check) do not compile or execute crate code. Severity here reflects that unrecognized or future cargo subcommands fall through to this rule; known read-only subcommands are not themselves being flagged as risky.",
+      "patterns": [
+        {
+          "pattern": "cargo ...",
+          "pattern_type": "argument",
+          "example": "cargo tree",
+          "match": {
+            "raw_pattern": "^cargo(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [],
+      "notes": "Default bumped to WARNING (not INFO) because this tool's CLI surface evolves quickly; an unmatched/unrecognized subcommand should surface for review rather than silently pass as benign."
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

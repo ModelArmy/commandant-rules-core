@@ -1,0 +1,66 @@
+{
+  "tool": "rmdir",
+  "tool_summary": "Removes empty directories. Fails on non-empty directories, which makes it considerably lower risk than rm -r.",
+  "platform": "posix",
+  "platform_notes": "Behavior is consistent between GNU and BSD rmdir.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "rmdir-removes-parents",
+      "description": "The -p/--parents flag removes a directory and then attempts to remove each parent directory in the path if it becomes empty, which can remove more of a directory tree than the single named target.",
+      "patterns": [
+        {
+          "pattern": "rmdir -p ...",
+          "pattern_type": "flag",
+          "example": "rmdir -p ./build/output/tmp",
+          "match": {
+            "flags_any": [
+              "-p",
+              "--parents"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "reversible_note": "Only removes directories that are empty at the time; will not delete non-empty directories or files, so unintended data loss is unlikely.",
+      "severity": "INFO",
+      "mitre_attack": []
+    },
+    {
+      "id": "rmdir-removes-empty-directory",
+      "description": "Removes an empty directory. Fails with an error if the directory is not empty, which limits the blast radius considerably compared to rm -r.",
+      "patterns": [
+        {
+          "pattern": "rmdir ...",
+          "pattern_type": "argument",
+          "example": "rmdir ./empty_dir",
+          "match": {
+            "raw_pattern": "^rmdir(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "deletes-files"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

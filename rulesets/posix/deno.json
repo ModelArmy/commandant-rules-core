@@ -1,0 +1,184 @@
+{
+  "tool": "deno",
+  "tool_summary": "A JavaScript/TypeScript runtime with a distinct security model from Node: scripts are sandboxed by default and require explicit --allow-* flags to access the filesystem, network, environment, or subprocesses.",
+  "platform": "posix",
+  "platform_notes": "Deno's permission-flag model (--allow-net, --allow-write, --allow-run, etc.) is the primary security-relevant surface, distinct from Node's ambient-authority model. Behavior is consistent across Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "deno-allow-all",
+      "description": "The -A/--allow-all flag disables Deno's default sandbox entirely, granting the script the same ambient-authority access to filesystem, network, environment, and subprocess execution as an unsandboxed runtime like Node. This defeats the primary security feature Deno is designed around.",
+      "patterns": [
+        {
+          "pattern": "deno run -A ...",
+          "pattern_type": "flag",
+          "example": "deno run -A script.ts",
+          "match": {
+            "flags_any": [
+              "-A",
+              "--allow-all"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the unsandboxed script does, which commandant does not inspect.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "deno-allow-run",
+      "description": "The --allow-run flag grants the script permission to spawn subprocesses. Combined with an opaque script file, this means the script can execute arbitrary system commands beyond what the sandbox would otherwise permit.",
+      "patterns": [
+        {
+          "pattern": "deno run --allow-run ...",
+          "pattern_type": "flag",
+          "example": "deno run --allow-run script.ts",
+          "match": {
+            "flags_any": [
+              "--allow-run"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on what the script does with subprocess access, which commandant does not inspect.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "deno-eval-destructive-payload",
+      "description": "The eval subcommand (or -e in some versions) executes the given string as JavaScript/TypeScript. When that string is visible in the invocation, commandant can inspect it directly. This rule fires when the payload itself contains a known destructive pattern.",
+      "patterns": [
+        {
+          "pattern": "deno eval '... Deno.remove(...) ...'",
+          "pattern_type": "argument",
+          "example": "deno eval \"await Deno.remove('/tmp/build', { recursive: true })\"",
+          "match": {
+            "args_any": [
+              "eval"
+            ],
+            "raw_pattern": "(Deno\\.remove|Deno\\.run|Deno\\.Command).*recursive"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.007"
+      ],
+      "notes": "Coarse string-sniff, not a recursive re-assessment. See R-INS-05."
+    },
+    {
+      "id": "deno-run-script",
+      "description": "The run subcommand executes a script file (local or, notably, a remote URL). Unlike Node, Deno can execute a script directly from a URL without a separate install step, which is a distinct fetch-and-execute vector. Whether the sandbox is meaningfully restrictive depends on which --allow-* flags, if any, accompany the invocation.",
+      "patterns": [
+        {
+          "pattern": "deno run https://...",
+          "pattern_type": "argument",
+          "example": "deno run https://example.com/script.ts",
+          "match": {
+            "args_any": [
+              "run"
+            ],
+            "raw_pattern": "https?://\\S+\\.(ts|js|mjs)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the fetched script's contents, which commandant does not inspect, and which may differ between invocations if the remote content changes.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.007",
+        "T1105"
+      ]
+    },
+    {
+      "id": "deno-run-local-file",
+      "description": "The run subcommand executes a local script file. Contents are not visible in the command string and cannot currently be inspected by commandant. Whether the sandbox is meaningfully restrictive depends on which --allow-* flags, if any, accompany the invocation.",
+      "patterns": [
+        {
+          "pattern": "deno run $SCRIPT",
+          "pattern_type": "argument",
+          "example": "deno run script.ts",
+          "match": {
+            "args_any": [
+              "run"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. See R-INS-03.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "deno-manages-runtime",
+      "description": "Manages or runs Deno scripts/tasks. Read-only subcommands (info, doc) do not execute script code.",
+      "patterns": [
+        {
+          "pattern": "deno ...",
+          "pattern_type": "argument",
+          "example": "deno info",
+          "match": {
+            "raw_pattern": "^deno(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

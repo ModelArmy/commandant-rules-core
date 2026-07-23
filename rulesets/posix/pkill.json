@@ -1,0 +1,96 @@
+{
+  "tool": "pkill",
+  "tool_summary": "Sends a signal to processes matched by name or other attributes rather than by PID. Pattern-based targeting means a broad or loose pattern can affect far more processes than intended.",
+  "platform": "posix",
+  "platform_notes": "pkill is present on both GNU/Linux (procps) and macOS/BSD; core flag semantics (-9, -f, -u) are consistent for the purposes of this ruleset.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "pkill-broad-pattern",
+      "description": "A very short or generic pattern (e.g. a single common letter, or a wildcard-like substring) combined with pattern matching can match and signal many unrelated processes rather than the one intended.",
+      "patterns": [
+        {
+          "pattern": "pkill -f .",
+          "pattern_type": "argument",
+          "example": "pkill -f python",
+          "match": {
+            "flags_any": [
+              "-f"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "reversible_note": "-f matches against the full command line rather than just the process name, widening the match surface; whether this is dangerous depends heavily on the specific pattern used, which commandant does not further evaluate for specificity.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "pkill-sigkill",
+      "description": "SIGKILL (-9 or -KILL) terminates matched processes immediately without allowing them to clean up, flush buffers, or release resources gracefully.",
+      "patterns": [
+        {
+          "pattern": "pkill -9 ...",
+          "pattern_type": "flag",
+          "example": "pkill -9 myapp",
+          "match": {
+            "flags_any": [
+              "-9",
+              "-KILL",
+              "-SIGKILL"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1489"
+      ]
+    },
+    {
+      "id": "pkill-signals-by-pattern",
+      "description": "Sends a signal (SIGTERM by default) to all processes matching the given name pattern. Unlike kill, the affected process set depends on runtime pattern matching against currently running processes, not a fixed PID.",
+      "patterns": [
+        {
+          "pattern": "pkill ...",
+          "pattern_type": "argument",
+          "example": "pkill myapp",
+          "match": {
+            "raw_pattern": "^pkill(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [],
+      "likely_consequences": [],
+      "reversible": "no",
+      "severity": "INFO",
+      "mitre_attack": [
+        "T1489"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [],
+    "reversible": "no",
+    "severity": "INFO",
+    "mitre_attack": [
+      "T1489"
+    ]
+  }
+}

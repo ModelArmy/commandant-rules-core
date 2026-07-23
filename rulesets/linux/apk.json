@@ -1,0 +1,138 @@
+{
+  "tool": "apk",
+  "tool_summary": "Alpine Linux's package manager. Installs, upgrades, and removes system packages, typically requiring root, and runs arbitrary pre-install/post-install scripts. Especially relevant given how common Alpine-based images are as CI/container bases for agent-driven workflows.",
+  "platform": "linux",
+  "platform_notes": "apk is Alpine Linux-specific.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "apk-add-untrusted-repository",
+      "description": "The --repository/-X flag adds or uses a repository other than those configured in /etc/apk/repositories. Installing from an untrusted or unfamiliar repository is a common supply-chain attack vector, since packages run arbitrary install scripts with root privileges at install time.",
+      "patterns": [
+        {
+          "pattern": "apk add --repository ...",
+          "pattern_type": "flag",
+          "example": "apk add --repository https://untrusted.example.com/alpine somepkg",
+          "match": {
+            "args_any": [
+              "add"
+            ],
+            "flags_any": [
+              "-X",
+              "--repository"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its install-time scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "apk-add-allow-untrusted",
+      "description": "The --allow-untrusted flag disables package signature verification entirely, removing the primary protection against tampered packages.",
+      "patterns": [
+        {
+          "pattern": "apk add --allow-untrusted ...",
+          "pattern_type": "flag",
+          "example": "apk add --allow-untrusted somepkg",
+          "match": {
+            "flags_any": [
+              "--allow-untrusted"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution",
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but its install-time scripts may have already made changes beyond the package's own files.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "apk-add",
+      "description": "Installs a package, running arbitrary pre-install/post-install scripts with root privileges at install time. Very commonly used in Dockerfiles and CI scripts targeting Alpine-based images.",
+      "patterns": [
+        {
+          "pattern": "apk add ...",
+          "pattern_type": "argument",
+          "example": "apk add curl",
+          "match": {
+            "args_any": [
+              "add"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code",
+        "network-egress",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The package can be removed, but install-time scripts may have already made changes beyond the package's own files.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1195.001"
+      ]
+    },
+    {
+      "id": "apk-package-management",
+      "description": "Manages Alpine packages. Read-only subcommands (list, info, search) do not alter system state.",
+      "patterns": [
+        {
+          "pattern": "apk ...",
+          "pattern_type": "argument",
+          "example": "apk list --installed",
+          "match": {
+            "raw_pattern": "^apk(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "INFO",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege"
+    ],
+    "reversible": "yes",
+    "severity": "INFO",
+    "mitre_attack": []
+  }
+}

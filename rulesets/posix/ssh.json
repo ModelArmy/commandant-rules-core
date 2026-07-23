@@ -1,0 +1,99 @@
+{
+  "tool": "ssh",
+  "tool_summary": "Opens a remote shell session or runs a single command on a remote host. An agent invoking ssh extends its effective reach to another machine entirely, which commandant has no visibility into once the session is established.",
+  "platform": "posix",
+  "platform_notes": "ssh behavior and flags are consistent across Linux and macOS (OpenSSH is the standard implementation on both).",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "ssh-disable-host-key-checking",
+      "description": "The -o StrictHostKeyChecking=no option (or setting UserKnownHostsFile=/dev/null) disables verification that the remote host is who it claims to be, removing protection against connecting to an impostor host via DNS spoofing, ARP spoofing, or a compromised known_hosts entry.",
+      "patterns": [
+        {
+          "pattern": "ssh -o StrictHostKeyChecking=no ...",
+          "pattern_type": "argument",
+          "example": "ssh -o StrictHostKeyChecking=no user@host",
+          "match": {
+            "raw_pattern": "StrictHostKeyChecking\\s*=\\s*no|UserKnownHostsFile\\s*=\\s*/dev/null"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress",
+        "elevated-privilege"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "yes",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1021.004"
+      ]
+    },
+    {
+      "id": "ssh-remote-command",
+      "description": "Running ssh with a trailing command executes that command on the remote host non-interactively. The remote command's effects are entirely outside commandant's visibility once the connection is made -- this is functionally similar in opacity to sudo/su, but the boundary crossed is a network host rather than a privilege level.",
+      "patterns": [
+        {
+          "pattern": "ssh user@host command",
+          "pattern_type": "argument",
+          "example": "ssh user@host 'rm -rf /tmp/build'",
+          "match": {
+            "raw_pattern": "^ssh\\s+(-\\S+\\s+)*\\S+@?\\S+\\s+\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the remote command's effects, which commandant cannot observe or assess since they occur on a different machine.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1021.004"
+      ],
+      "notes": "This rule's raw_pattern is a best-effort heuristic distinguishing 'ssh host command' from a bare interactive session; it may over- or under-match depending on option ordering and is not a full command-line parse."
+    },
+    {
+      "id": "ssh-opens-remote-session",
+      "description": "Opens an interactive remote shell session. Everything typed in that session afterward is invisible to commandant, since it is not a separate command invocation commandant assesses -- it exists entirely inside the remote terminal.",
+      "patterns": [
+        {
+          "pattern": "ssh ...",
+          "pattern_type": "argument",
+          "example": "ssh user@host",
+          "match": {
+            "raw_pattern": "^ssh(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "network-egress"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1021.004"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "network-egress"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1021.004"
+    ]
+  }
+}

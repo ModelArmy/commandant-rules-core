@@ -1,0 +1,130 @@
+{
+  "tool": "node",
+  "tool_summary": "The Node.js JavaScript runtime. Can execute a visible inline expression (-e/--eval), an opaque script file, or drop into an interactive REPL.",
+  "platform": "posix",
+  "platform_notes": "Behavior of -e and bare invocation is consistent across Node.js on Linux and macOS.",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": true,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "node-e-destructive-payload",
+      "description": "The -e/--eval flag executes the given string as JavaScript. When that string is visible in the invocation, commandant can inspect it directly. This rule fires when the payload itself contains a known destructive pattern (child_process shelling out to rm -rf, fs.rmSync on a broad path, etc.), rather than merely flagging that Node was invoked.",
+      "patterns": [
+        {
+          "pattern": "node -e '... execSync(\"rm -rf ...\") ...'",
+          "pattern_type": "flag-argument-combination",
+          "example": "node -e \"require('child_process').execSync('rm -rf /tmp/build')\"",
+          "match": {
+            "flags_any": [
+              "-e",
+              "--eval"
+            ],
+            "raw_pattern": "-e\\s+['\"].*(rm\\s+-[a-zA-Z]*r[a-zA-Z]*f|rm\\s+-[a-zA-Z]*f[a-zA-Z]*r|execSync|exec\\(|spawn\\(|fs\\.rmSync|fs\\.rmdirSync).*['\"]"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.007"
+      ],
+      "notes": "Coarse string-sniff over the -e payload, not a recursive re-assessment. A payload that evades this pattern (e.g. constructed via string concatenation or dynamic require) will not be caught. See R-INS-05."
+    },
+    {
+      "id": "node-e-visible-code",
+      "description": "The -e/--eval flag executes the given string as JavaScript. The code is visible in the invocation and does not itself match a known destructive pattern, but any -e invocation still executes arbitrary JavaScript including file I/O, network access, and child process spawning.",
+      "patterns": [
+        {
+          "pattern": "node -e '...'",
+          "pattern_type": "flag",
+          "example": "node -e \"console.log('hello')\"",
+          "match": {
+            "flags_any": [
+              "-e",
+              "--eval"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends on the executed code, which is visible in the -e argument and can be reviewed prior to execution, unlike a script file invocation.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "node-script-file",
+      "description": "Invoking node with a script file path executes the file's contents, which are not visible in the command string itself and cannot currently be inspected by commandant. Treated as the worst case since the script's actions are entirely opaque.",
+      "patterns": [
+        {
+          "pattern": "node $SCRIPT",
+          "pattern_type": "argument",
+          "example": "node ./deploy.js",
+          "match": {
+            "raw_pattern": "^node\\s+(?!-e\\b|--eval\\b)\\S"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "unsafe-code-execution"
+      ],
+      "reversible": "depends",
+      "reversible_note": "Reversibility depends entirely on the script's contents, which commandant does not inspect. Treated as the worst case. See R-INS-03.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    },
+    {
+      "id": "node-interactive",
+      "description": "Bare invocation with no -e and no script argument starts an interactive REPL. Uncommon in an autonomous agent context -- an agent invoking an interactive interpreter is itself a signal worth attention.",
+      "patterns": [
+        {
+          "pattern": "node",
+          "pattern_type": "argument",
+          "example": "node",
+          "match": {
+            "raw_pattern": "^node\\s*$"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1059.007"
+      ]
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": [
+      "T1059.007"
+    ]
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "tool": "nvram",
+  "tool_summary": "Reads and modifies firmware/NVRAM variables on macOS, which can affect boot behavior, security settings, and startup device selection.",
+  "platform": "macos",
+  "platform_notes": "nvram is macOS-specific.",
+  "llm_confidence": "medium",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "nvram-clear-all",
+      "description": "The -c flag clears all NVRAM variables, which can reset boot arguments, startup disk selection, and other firmware-level configuration.",
+      "patterns": [
+        {
+          "pattern": "nvram -c ...",
+          "pattern_type": "flag",
+          "example": "nvram -c",
+          "match": {
+            "flags_any": [
+              "-c"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment",
+        "irreversible"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "ERROR",
+      "mitre_attack": []
+    },
+    {
+      "id": "nvram-set-variable",
+      "description": "Setting an NVRAM variable (name=value argument) writes firmware-level configuration, which can affect boot arguments or startup behavior, and persists across reboots.",
+      "patterns": [
+        {
+          "pattern": "nvram $NAME=$VALUE",
+          "pattern_type": "argument",
+          "example": "nvram boot-args=\"-v\"",
+          "match": {
+            "raw_pattern": "^nvram\\s+\\S+="
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "reversible_note": "The variable can be reset with -d, but a bad boot-args value can render the system unbootable or unstable until fixed.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "nvram-delete-variable",
+      "description": "The -d flag deletes a specific NVRAM variable.",
+      "patterns": [
+        {
+          "pattern": "nvram -d ...",
+          "pattern_type": "flag",
+          "example": "nvram -d boot-args",
+          "match": {
+            "flags_any": [
+              "-d"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "modifies-environment"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "no",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "nvram-modifies-firmware-variables",
+      "description": "Reads or modifies firmware NVRAM variables. There is no common legitimate use case for this tool in a coding-agent or terminal-assistant workflow; its presence in a command stream is itself a signal worth elevated attention, independent of whether the specific invocation is a read or a write.",
+      "patterns": [
+        {
+          "pattern": "nvram ...",
+          "pattern_type": "argument",
+          "example": "nvram boot-args",
+          "match": {
+            "raw_pattern": "^nvram(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "reads-files"
+      ],
+      "likely_consequences": [
+        "harmful-decision"
+      ],
+      "reversible": "yes",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "elevated-privilege",
+      "reads-files"
+    ],
+    "reversible": "yes",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}

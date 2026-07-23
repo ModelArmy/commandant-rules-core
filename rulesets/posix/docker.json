@@ -1,0 +1,164 @@
+{
+  "tool": "docker",
+  "tool_summary": "Container management CLI. The Docker daemon typically runs as root, and several common flags grant the container root-equivalent access to the host, making docker itself a privilege boundary despite not requiring sudo to invoke.",
+  "platform": "posix",
+  "platform_notes": "Docker CLI behavior is consistent across Linux and macOS (Docker Desktop on macOS runs containers inside a Linux VM, but the CLI surface and flag semantics covered here are the same).",
+  "llm_confidence": "high",
+  "unknown_flags": [],
+  "is_multiplexer": false,
+  "option_abbreviations": {},
+  "rules": [
+    {
+      "id": "docker-privileged",
+      "description": "The --privileged flag grants the container nearly all capabilities of the host, including direct device access, effectively removing container isolation. This is one of the most consequential flags in the entire Docker CLI.",
+      "patterns": [
+        {
+          "pattern": "docker run --privileged ...",
+          "pattern_type": "flag",
+          "example": "docker run --privileged myimage",
+          "match": {
+            "flags_any": [
+              "--privileged"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "executes-code"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The container can be stopped and removed, but actions taken with host-level access while running are not undone.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "docker-host-mount-sensitive",
+      "description": "Bind-mounting the Docker socket (/var/run/docker.sock) or the host filesystem root into a container grants the container control of the Docker daemon itself (equivalent to root on the host) or direct read/write access to the entire host filesystem.",
+      "patterns": [
+        {
+          "pattern": "docker run -v /var/run/docker.sock:...",
+          "pattern_type": "flag-argument-combination",
+          "example": "docker run -v /var/run/docker.sock:/var/run/docker.sock myimage",
+          "match": {
+            "flags_any": [
+              "-v",
+              "--volume",
+              "--mount"
+            ],
+            "args_any": [
+              "docker.sock",
+              "/:/host",
+              "/:/hostfs"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "writes-files"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The container can be stopped and removed, but actions taken with host filesystem or daemon access while running are not undone.",
+      "severity": "ERROR",
+      "mitre_attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "docker-host-network-or-pid",
+      "description": "The --network=host or --pid=host flags remove network or process namespace isolation between the container and the host, giving the container visibility into (and in some cases control over) host-level network interfaces or processes.",
+      "patterns": [
+        {
+          "pattern": "docker run --network host ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "docker run --network host myimage",
+          "match": {
+            "raw_pattern": "--(network|net|pid)[=\\s]host"
+          }
+        }
+      ],
+      "risk_tags": [
+        "elevated-privilege",
+        "network-egress"
+      ],
+      "likely_consequences": [
+        "computer-security-compromise"
+      ],
+      "reversible": "depends",
+      "reversible_note": "The container can be stopped and removed, but actions taken with host network/process visibility while running are not undone.",
+      "severity": "WARNING",
+      "mitre_attack": [
+        "T1611"
+      ]
+    },
+    {
+      "id": "docker-remove-force",
+      "description": "The rm -f / rmi -f subcommands force-remove a running container or an image in use, discarding it without confirmation.",
+      "patterns": [
+        {
+          "pattern": "docker rm -f ...",
+          "pattern_type": "flag-argument-combination",
+          "example": "docker rm -f mycontainer",
+          "match": {
+            "args_any": [
+              "rm",
+              "rmi"
+            ],
+            "flags_any": [
+              "-f",
+              "--force"
+            ]
+          }
+        }
+      ],
+      "risk_tags": [
+        "deletes-files"
+      ],
+      "likely_consequences": [
+        "data-loss"
+      ],
+      "reversible": "no",
+      "reversible_note": "Data inside a removed container's writable layer (not in a separately managed volume) is not recoverable.",
+      "severity": "WARNING",
+      "mitre_attack": []
+    },
+    {
+      "id": "docker-runs-container-or-manages-images",
+      "description": "Runs a container or manages images/containers. Read-only subcommands (ps, images, logs, inspect) do not alter system state. Severity here reflects that Docker's CLI surface evolves actively across releases, so an unrecognized subcommand should surface for review rather than silently pass as benign.",
+      "patterns": [
+        {
+          "pattern": "docker ...",
+          "pattern_type": "argument",
+          "example": "docker ps",
+          "match": {
+            "raw_pattern": "^docker(\\s|$)"
+          }
+        }
+      ],
+      "risk_tags": [
+        "executes-code"
+      ],
+      "likely_consequences": [],
+      "reversible": "depends",
+      "severity": "WARNING",
+      "mitre_attack": []
+    }
+  ],
+  "default_rule": {
+    "risk_tags": [
+      "executes-code"
+    ],
+    "reversible": "depends",
+    "severity": "WARNING",
+    "mitre_attack": []
+  }
+}
